@@ -3,408 +3,279 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Control Proyectos</title>
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<title>ControlPro — Gestión de Proyectos</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
-  :root {
-    --bg: #0f1117;
-    --surface: #1a1d27;
-    --surface2: #222636;
-    --border: #2e3347;
-    --accent: #3b82f6;
-    --accent2: #6366f1;
-    --green: #22c55e;
-    --yellow: #f59e0b;
-    --red: #ef4444;
-    --text: #e2e8f0;
-    --text2: #94a3b8;
-    --text3: #64748b;
-    --font: 'Segoe UI', system-ui, sans-serif;
-    --radius: 10px;
-    --shadow: 0 4px 24px rgba(0,0,0,0.4);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+:root {
+  --bg:#0f1117;--surface:#1a1d27;--surface2:#222636;--border:#2e3347;
+  --accent:#3b82f6;--accent2:#6366f1;--green:#22c55e;--yellow:#f59e0b;
+  --red:#ef4444;--orange:#f97316;--purple:#a855f7;--cyan:#06b6d4;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --font:'Segoe UI',system-ui,sans-serif;--radius:10px;--shadow:0 4px 24px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
 
-  /* LOGIN */
-  #login-screen {
-    display: flex; align-items: center; justify-content: center;
-    min-height: 100vh;
-    background: radial-gradient(ellipse at 60% 40%, #1e2a4a 0%, #0f1117 70%);
-  }
-  .login-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 16px; padding: 48px 40px; width: 380px;
-    box-shadow: var(--shadow); text-align: center;
-  }
-  .login-logo { font-size: 36px; margin-bottom: 8px; }
-  .login-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
-  .login-sub { color: var(--text2); font-size: 13px; margin-bottom: 32px; }
-  .btn-login {
-    width: 100%; padding: 14px; background: var(--accent);
-    border: none; border-radius: var(--radius); color: white;
-    font-size: 15px; font-weight: 600; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    transition: background 0.2s;
-  }
-  .btn-login:hover { background: #2563eb; }
-  .login-note { color: var(--text3); font-size: 11px; margin-top: 20px; }
+/* ── TOPBAR ── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 20px;height:54px;display:flex;align-items:center;
+  justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-logo{font-size:17px;font-weight:800;letter-spacing:-.5px}
+.topbar-logo span{color:var(--accent)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-badge{background:var(--surface2);border:1px solid var(--border);
+  border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text2);
+  display:flex;align-items:center;gap:7px}
+.user-avatar{width:24px;height:24px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#fff}
+.sync-badge{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
 
-  /* APP SHELL */
-  #app { display: none; }
-  .topbar {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    padding: 0 24px; height: 56px;
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
-  }
-  .topbar-left { display: flex; align-items: center; gap: 12px; }
-  .topbar-logo { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
-  .topbar-logo span { color: var(--accent); }
-  .topbar-right { display: flex; align-items: center; gap: 12px; }
-  .user-badge {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 20px; padding: 6px 14px;
-    font-size: 13px; color: var(--text2);
-    display: flex; align-items: center; gap: 8px;
-  }
-  .user-avatar {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: white;
-  }
-  .btn-logout {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--text2); padding: 6px 12px; border-radius: 8px;
-    font-size: 12px; cursor: pointer;
-  }
-  .btn-logout:hover { border-color: var(--red); color: var(--red); }
+/* ── NAV ── */
+.nav{background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 20px;display:flex;gap:2px;overflow-x:auto}
+.nav-btn{padding:11px 14px;background:transparent;border:none;
+  color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .2s;
+  display:flex;align-items:center;gap:5px;white-space:nowrap}
+.nav-btn:hover{color:var(--text)}
+.nav-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
 
-  /* NAV */
-  .nav {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    padding: 0 24px; display: flex; gap: 4px;
-  }
-  .nav-btn {
-    padding: 12px 16px; background: transparent; border: none;
-    color: var(--text2); font-size: 13px; font-weight: 500;
-    cursor: pointer; border-bottom: 2px solid transparent;
-    transition: all 0.2s; display: flex; align-items: center; gap: 6px;
-  }
-  .nav-btn:hover { color: var(--text); }
-  .nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+/* ── MAIN ── */
+.main{padding:20px;max-width:1400px;margin:0 auto}
+.page{display:none}
+.page.active{display:block}
 
-  /* MAIN */
-  .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
-  .page { display: none; }
-  .page.active { display: block; }
+/* ── CARDS ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.stat-value{font-size:26px;font-weight:800;line-height:1}
+.stat-green .stat-value{color:var(--green)}
+.stat-yellow .stat-value{color:var(--yellow)}
+.stat-red .stat-value{color:var(--red)}
+.stat-blue .stat-value{color:var(--accent)}
+.stat-purple .stat-value{color:var(--purple)}
 
-  /* CARDS */
-  .cards-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px; margin-bottom: 24px;
-  }
-  .stat-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 20px;
-  }
-  .stat-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-  .stat-value { font-size: 28px; font-weight: 800; line-height: 1; }
-  .stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
-  .stat-green .stat-value { color: var(--green); }
-  .stat-yellow .stat-value { color: var(--yellow); }
-  .stat-red .stat-value { color: var(--red); }
-  .stat-blue .stat-value { color: var(--accent); }
+/* ── SECTION ── */
+.section{margin-bottom:24px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-size:14px;font-weight:700}
 
-  /* SECTION */
-  .section { margin-bottom: 28px; }
-  .section-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 14px;
-  }
-  .section-title { font-size: 15px; font-weight: 700; }
-  .section-sub { font-size: 12px; color: var(--text3); }
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--surface2);padding:10px 12px;text-align:left;
+  font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;
+  letter-spacing:.5px;white-space:nowrap}
+td{padding:11px 12px;font-size:12px;border-top:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:var(--surface2)}
 
-  /* TABLA PROYECTOS */
-  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
-  table { width: 100%; border-collapse: collapse; }
-  th {
-    background: var(--surface2); padding: 11px 14px;
-    text-align: left; font-size: 11px; font-weight: 600;
-    color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px;
-    white-space: nowrap;
-  }
-  td {
-    padding: 12px 14px; font-size: 13px; border-top: 1px solid var(--border);
-    vertical-align: middle;
-  }
-  tr:hover td { background: var(--surface2); }
-  .badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
-  }
-  .badge-green { background: rgba(34,197,94,0.12); color: var(--green); }
-  .badge-yellow { background: rgba(245,158,11,0.12); color: var(--yellow); }
-  .badge-red { background: rgba(239,68,68,0.12); color: var(--red); }
-  .badge-blue { background: rgba(59,130,246,0.12); color: var(--accent); }
-  .badge-grey { background: rgba(148,163,184,0.1); color: var(--text2); }
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;
+  border-radius:20px;font-size:10px;font-weight:600}
+.badge-green{background:rgba(34,197,94,.12);color:var(--green)}
+.badge-yellow{background:rgba(245,158,11,.12);color:var(--yellow)}
+.badge-red{background:rgba(239,68,68,.12);color:var(--red)}
+.badge-blue{background:rgba(59,130,246,.12);color:var(--accent)}
+.badge-purple{background:rgba(168,85,247,.12);color:var(--purple)}
+.badge-orange{background:rgba(249,115,22,.12);color:var(--orange)}
+.badge-cyan{background:rgba(6,182,212,.12);color:var(--cyan)}
+.badge-grey{background:rgba(148,163,184,.1);color:var(--text2)}
 
-  /* GANTT */
-  .gantt-wrap { overflow-x: auto; }
-  .gantt-container {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden;
-  }
-  .gantt-header {
-    display: grid; padding: 10px 0;
-    background: var(--surface2); border-bottom: 1px solid var(--border);
-  }
-  .gantt-row {
-    display: grid; border-bottom: 1px solid var(--border);
-    min-height: 52px; align-items: center;
-  }
-  .gantt-row:last-child { border-bottom: none; }
-  .gantt-label {
-    padding: 0 16px; font-size: 12px; font-weight: 600;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .gantt-label-sub { font-size: 11px; color: var(--text3); font-weight: 400; }
-  .gantt-track { position: relative; padding: 8px 4px; }
-  .gantt-bar {
-    height: 24px; border-radius: 6px; position: absolute;
-    display: flex; align-items: center; padding: 0 10px;
-    font-size: 10px; font-weight: 600; color: white;
-    white-space: nowrap; overflow: hidden;
-    transition: opacity 0.2s;
-    cursor: pointer;
-  }
-  .gantt-bar:hover { opacity: 0.85; }
-  .gantt-bar-ing { background: linear-gradient(90deg, #3b82f6, #6366f1); }
-  .gantt-bar-com { background: linear-gradient(90deg, #f59e0b, #d97706); }
-  .gantt-bar-alm { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
-  .gantt-bar-mon { background: linear-gradient(90deg, #22c55e, #16a34a); }
-  .gantt-bar-val { background: linear-gradient(90deg, #06b6d4, #0891b2); }
-  .gantt-today {
-    position: absolute; top: 0; bottom: 0; width: 2px;
-    background: var(--red); opacity: 0.6; z-index: 10;
-  }
-  .gantt-month-label {
-    font-size: 10px; color: var(--text3); text-align: center; padding: 0 4px;
-  }
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:200;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow)}
+.modal-header{padding:18px 22px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:700}
+.modal-close{background:transparent;border:none;color:var(--text2);font-size:20px;cursor:pointer}
+.modal-body{padding:22px}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);
+  display:flex;gap:10px;justify-content:flex-end}
 
-  /* FORMULARIO */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7); z-index: 200;
-    align-items: center; justify-content: center; padding: 20px;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 14px; width: 100%; max-width: 580px;
-    max-height: 90vh; overflow-y: auto;
-    box-shadow: var(--shadow);
-  }
-  .modal-header {
-    padding: 20px 24px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .modal-title { font-size: 16px; font-weight: 700; }
-  .modal-close {
-    background: transparent; border: none; color: var(--text2);
-    font-size: 20px; cursor: pointer; padding: 4px;
-  }
-  .modal-body { padding: 24px; }
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .form-group { display: flex; flex-direction: column; gap: 6px; }
-  .form-group.full { grid-column: 1 / -1; }
-  label { font-size: 12px; font-weight: 600; color: var(--text2); }
-  input, select, textarea {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px 12px; color: var(--text);
-    font-size: 13px; font-family: var(--font); width: 100%;
-    transition: border-color 0.2s;
-  }
-  input:focus, select:focus, textarea:focus {
-    outline: none; border-color: var(--accent);
-  }
-  textarea { resize: vertical; min-height: 80px; }
-  .modal-footer {
-    padding: 16px 24px; border-top: 1px solid var(--border);
-    display: flex; gap: 10px; justify-content: flex-end;
-  }
-  .btn {
-    padding: 10px 20px; border-radius: 8px; font-size: 13px;
-    font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;
-  }
-  .btn-primary { background: var(--accent); color: white; }
-  .btn-primary:hover { background: #2563eb; }
-  .btn-secondary {
-    background: transparent; color: var(--text2);
-    border: 1px solid var(--border);
-  }
-  .btn-secondary:hover { border-color: var(--text2); color: var(--text); }
-  .btn-sm { padding: 6px 12px; font-size: 12px; }
-  .btn-danger { background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group.third{grid-column:span 1}
+label{font-size:11px;font-weight:600;color:var(--text2)}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:9px 11px;color:var(--text);font-size:12px;
+  font-family:var(--font);width:100%;transition:border-color .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:72px}
+select option{background:var(--surface2)}
 
-  /* ALERTAS */
-  .alert-list { display: flex; flex-direction: column; gap: 8px; }
-  .alert-item {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 14px 16px;
-    display: flex; align-items: flex-start; gap: 12px;
-    border-left: 3px solid var(--border);
-  }
-  .alert-item.alerta-roja { border-left-color: var(--red); }
-  .alert-item.alerta-amarilla { border-left-color: var(--yellow); }
-  .alert-item.alerta-info { border-left-color: var(--accent); }
-  .alert-icon { font-size: 18px; margin-top: 1px; }
-  .alert-content { flex: 1; }
-  .alert-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
-  .alert-desc { font-size: 12px; color: var(--text2); }
-  .alert-time { font-size: 11px; color: var(--text3); margin-top: 4px; }
+/* ── BTN ── */
+.btn{padding:9px 18px;border-radius:8px;font-size:12px;font-weight:600;
+  cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-secondary{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--text2);color:var(--text)}
+.btn-sm{padding:5px 11px;font-size:11px}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.btn-green{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.btn-icon{background:transparent;border:1px solid var(--border);color:var(--text2);
+  padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px}
+.btn-icon:hover{border-color:var(--accent);color:var(--accent)}
 
-  /* TAREAS */
-  .tarea-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
-  }
-  .tarea-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .tarea-title { font-size: 14px; font-weight: 600; }
-  .tarea-meta { display: flex; gap: 12px; font-size: 12px; color: var(--text2); margin-bottom: 12px; }
-  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
-  .progress-green { background: var(--green); }
-  .progress-yellow { background: var(--yellow); }
-  .progress-red { background: var(--red); }
-  .progress-blue { background: var(--accent); }
+/* ── ALERTS ── */
+.alert-list{display:flex;flex-direction:column;gap:7px}
+.alert-item{background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;
+  gap:10px;border-left:3px solid var(--border)}
+.alert-item.alerta-roja{border-left-color:var(--red)}
+.alert-item.alerta-amarilla{border-left-color:var(--yellow)}
+.alert-item.alerta-info{border-left-color:var(--accent)}
+.alert-icon{font-size:16px;margin-top:1px}
+.alert-content{flex:1}
+.alert-title{font-size:12px;font-weight:600;margin-bottom:2px}
+.alert-desc{font-size:11px;color:var(--text2)}
+.alert-time{font-size:10px;color:var(--text3);margin-top:3px}
 
-  /* FINANCIERO */
-  .fin-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 20px; margin-bottom: 12px;
-  }
-  .fin-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-  .fin-proyecto { font-size: 14px; font-weight: 700; }
-  .fin-cliente { font-size: 12px; color: var(--text2); }
-  .fin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
-  .fin-item label { font-size: 11px; color: var(--text3); display: block; margin-bottom: 3px; }
-  .fin-item .value { font-size: 16px; font-weight: 700; }
-  .hitos-list { display: flex; flex-direction: column; gap: 6px; }
-  .hito-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 10px; background: var(--surface2);
-    border-radius: 8px; font-size: 12px;
-  }
-  .hito-nombre { flex: 1; }
-  .hito-importe { font-weight: 700; color: var(--accent); }
-  .hito-fecha { color: var(--text3); }
+/* ── GANTT ── */
+.gantt-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.gantt-header-row{display:grid;background:var(--surface2);border-bottom:1px solid var(--border)}
+.gantt-row{display:grid;border-bottom:1px solid var(--border);min-height:46px;align-items:center}
+.gantt-row:last-child{border-bottom:none}
+.gantt-label{padding:0 14px;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-label-sub{font-size:10px;color:var(--text3);font-weight:400}
+.gantt-track{position:relative;height:46px}
+.gantt-bar{height:22px;border-radius:6px;position:absolute;top:12px;
+  display:flex;align-items:center;padding:0 8px;font-size:9px;
+  font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;cursor:pointer;transition:opacity .2s}
+.gantt-bar:hover{opacity:.85}
+.gantt-bar-ing{background:linear-gradient(90deg,#3b82f6,#6366f1)}
+.gantt-bar-com{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.gantt-bar-alm{background:linear-gradient(90deg,#8b5cf6,#7c3aed)}
+.gantt-bar-mon{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.gantt-bar-val{background:linear-gradient(90deg,#06b6d4,#0891b2)}
+.gantt-bar-dis{background:linear-gradient(90deg,#f97316,#ea580c)}
+.gantt-today{position:absolute;top:0;bottom:0;width:2px;background:var(--red);opacity:.6;z-index:10}
+.gantt-month-label{font-size:9px;color:var(--text3);text-align:center;padding:0 3px}
 
-  /* COMUNICACIONES */
-  .com-item {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px;
-  }
-  .com-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
-  .com-tipo { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  .com-fecha { font-size: 11px; color: var(--text3); }
-  .com-asunto { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-  .com-contenido { font-size: 12px; color: var(--text2); }
+/* ── CARDS EQUIPO/CLIENTES ── */
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.person-card{background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;transition:border-color .2s}
+.person-card:hover{border-color:var(--accent)}
+.person-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.person-avatar{width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+.person-name{font-size:13px;font-weight:700}
+.person-role{font-size:11px;color:var(--text2)}
+.person-info{font-size:11px;color:var(--text3);display:flex;flex-direction:column;gap:3px}
+.person-info span{display:flex;align-items:center;gap:5px}
+.person-actions{display:flex;gap:6px;margin-top:10px}
 
-  /* LOADING */
-  .loading {
-    display: flex; align-items: center; justify-content: center;
-    padding: 60px; color: var(--text3); font-size: 14px; gap: 12px;
-  }
-  .spinner {
-    width: 20px; height: 20px; border: 2px solid var(--border);
-    border-top-color: var(--accent); border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* ── PROGRESS ── */
+.progress-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:4px}
+.progress-fill{height:100%;border-radius:3px;transition:width .4s}
+.progress-green{background:var(--green)}
+.progress-yellow{background:var(--yellow)}
+.progress-red{background:var(--red)}
+.progress-blue{background:var(--accent)}
 
-  /* EMPTY */
-  .empty {
-    text-align: center; padding: 48px 24px;
-    color: var(--text3); font-size: 14px;
-  }
-  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+/* ── TAREA CARD ── */
+.tarea-card{background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px;margin-bottom:8px}
+.tarea-card.bloqueada{border-left:3px solid var(--red)}
+.tarea-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.tarea-title{font-size:13px;font-weight:600}
+.tarea-meta{display:flex;gap:10px;font-size:11px;color:var(--text2);margin-bottom:9px;flex-wrap:wrap}
 
-  /* RESPONSIVE */
-  @media (max-width: 768px) {
-    .main { padding: 16px; }
-    .cards-grid { grid-template-columns: repeat(2, 1fr); }
-    .form-grid { grid-template-columns: 1fr; }
-    .fin-grid { grid-template-columns: 1fr; }
-    .topbar { padding: 0 16px; }
-    .nav { overflow-x: auto; }
-    .nav-btn { white-space: nowrap; }
-  }
+/* ── FIN CARD ── */
+.fin-card{background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:18px;margin-bottom:10px}
+.fin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.fin-item label{font-size:10px;color:var(--text3);display:block;margin-bottom:2px}
+.fin-item .value{font-size:15px;font-weight:700}
+.hito-row{display:flex;align-items:center;gap:8px;padding:7px 9px;
+  background:var(--surface2);border-radius:7px;font-size:11px;margin-bottom:4px}
+.hito-nombre{flex:1}
+.hito-importe{font-weight:700;color:var(--accent)}
 
-  /* TOAST */
-  .toast-container {
-    position: fixed; bottom: 24px; right: 24px; z-index: 300;
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .toast {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px 16px; font-size: 13px;
-    box-shadow: var(--shadow); display: flex; align-items: center; gap: 10px;
-    animation: slideIn 0.3s ease;
-    max-width: 320px;
-  }
-  .toast-success { border-left: 3px solid var(--green); }
-  .toast-error { border-left: 3px solid var(--red); }
-  .toast-info { border-left: 3px solid var(--accent); }
-  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+/* ── COM ── */
+.com-item{background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 14px;margin-bottom:7px}
+.com-header{display:flex;justify-content:space-between;margin-bottom:5px}
 
-  .sync-badge {
-    font-size: 11px; color: var(--text3);
-    display: flex; align-items: center; gap: 4px;
-  }
-  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+/* ── EMPTY / LOADING ── */
+.empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:13px}
+.empty-icon{font-size:32px;margin-bottom:8px}
+.loading{display:flex;align-items:center;justify-content:center;padding:50px;color:var(--text3);font-size:13px;gap:10px}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-  select option { background: var(--surface2); }
+/* ── TOAST ── */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--surface2);border:1px solid var(--border);border-radius:9px;
+  padding:10px 14px;font-size:12px;box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:8px;animation:slideIn .3s ease;max-width:300px}
+.toast-success{border-left:3px solid var(--green)}
+.toast-error{border-left:3px solid var(--red)}
+.toast-info{border-left:3px solid var(--accent)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.tab-btn{padding:9px 14px;background:transparent;border:none;color:var(--text2);
+  font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* ── FICHA ── */
+.ficha-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.ficha-header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.ficha-avatar-lg{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:20px;font-weight:700;color:#fff}
+.ficha-nombre{font-size:18px;font-weight:800}
+.ficha-rol{font-size:13px;color:var(--text2)}
+.ficha-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px}
+.ficha-item{background:var(--surface2);border-radius:8px;padding:10px 12px}
+.ficha-item label{font-size:10px;color:var(--text3);display:block;margin-bottom:3px}
+.ficha-item span{font-size:12px;font-weight:600}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .main{padding:12px}
+  .cards-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:1fr}
+  .fin-grid{grid-template-columns:1fr}
+  .grid-cards{grid-template-columns:1fr}
+}
+
+.divider{height:1px;background:var(--border);margin:16px 0}
+.text-muted{color:var(--text3);font-size:11px}
+.fw-bold{font-weight:700}
+.gap-8{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="login-screen">
-  <div class="login-card">
-    <div class="login-logo">📊</div>
-    <div class="login-title">Control Proyectos</div>
-    <div class="login-sub">Sistema de gestión ejecutiva</div>
-    <button class="btn-login" id="btn-login" onclick="iniciarSesion()" disabled style="opacity:0.5;cursor:not-allowed">
-      <svg width="18" height="18" viewBox="0 0 21 21" fill="none">
-        <path d="M10 0H0v10h10V0z" fill="#F25022"/>
-        <path d="M21 0H11v10h10V0z" fill="#7FBA00"/>
-        <path d="M10 11H0v10h10V11z" fill="#00A4EF"/>
-        <path d="M21 11H11v10h10V11z" fill="#FFB900"/>
-      </svg>
-      <span id="btn-login-text">Cargando...</span>
-    </button>
-    <div class="login-note" id="login-note">Inicializando Microsoft Auth...</div>
-  </div>
-</div>
-
-<!-- APP -->
 <div id="app">
   <div class="topbar">
-    <div class="topbar-left">
+    <div style="display:flex;align-items:center;gap:12px">
       <div class="topbar-logo">Control<span>Pro</span></div>
       <div class="sync-badge">
         <div class="sync-dot" id="sync-dot"></div>
-        <span id="sync-label">Sincronizado</span>
+        <span id="sync-label">Conectando...</span>
       </div>
     </div>
     <div class="topbar-right">
       <div class="user-badge">
-        <div class="user-avatar" id="user-avatar">?</div>
-        <span id="user-name">Cargando...</span>
+        <div class="user-avatar">G</div>
+        <span>Gerente</span>
       </div>
-      <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
     </div>
   </div>
 
@@ -413,6 +284,8 @@
     <button class="nav-btn" onclick="navTo('proyectos')" data-page="proyectos">📁 Proyectos</button>
     <button class="nav-btn" onclick="navTo('gantt')" data-page="gantt">📅 Gantt</button>
     <button class="nav-btn" onclick="navTo('tareas')" data-page="tareas">✅ Tareas</button>
+    <button class="nav-btn" onclick="navTo('equipo')" data-page="equipo">👥 Equipo</button>
+    <button class="nav-btn" onclick="navTo('clientes')" data-page="clientes">🏢 Clientes</button>
     <button class="nav-btn" onclick="navTo('financiero')" data-page="financiero">💶 Financiero</button>
     <button class="nav-btn" onclick="navTo('comunicaciones')" data-page="comunicaciones">✉️ Comunicaciones</button>
     <button class="nav-btn" onclick="navTo('alertas')" data-page="alertas">🔔 Alertas</button>
@@ -422,44 +295,30 @@
 
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
-      <div class="section">
-        <div class="section-header">
-          <div>
-            <div class="section-title">Resumen ejecutivo</div>
-            <div class="section-sub" id="dashboard-fecha">Hoy —</div>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="sincronizarTodo()">🔄 Actualizar</button>
+      <div class="section-header" style="margin-bottom:16px">
+        <div>
+          <div class="section-title" style="font-size:16px">Resumen ejecutivo</div>
+          <div class="text-muted" id="dashboard-fecha"></div>
         </div>
-        <div class="cards-grid" id="stats-cards">
-          <div class="stat-card stat-blue"><div class="stat-label">Proyectos activos</div><div class="stat-value" id="stat-activos">—</div></div>
-          <div class="stat-card stat-green"><div class="stat-label">En plazo 🟢</div><div class="stat-value" id="stat-verde">—</div></div>
-          <div class="stat-card stat-yellow"><div class="stat-label">En riesgo 🟡</div><div class="stat-value" id="stat-amarillo">—</div></div>
-          <div class="stat-card stat-red"><div class="stat-label">Críticos 🔴</div><div class="stat-value" id="stat-rojo">—</div></div>
-        </div>
+        <button class="btn btn-primary btn-sm" onclick="cargarTodo()">🔄 Actualizar</button>
       </div>
-
+      <div class="cards-grid" id="stats-cards">
+        <div class="stat-card stat-blue"><div class="stat-label">Proyectos activos</div><div class="stat-value" id="stat-activos">—</div></div>
+        <div class="stat-card stat-green"><div class="stat-label">En plazo 🟢</div><div class="stat-value" id="stat-verde">—</div></div>
+        <div class="stat-card stat-yellow"><div class="stat-label">En riesgo 🟡</div><div class="stat-value" id="stat-amarillo">—</div></div>
+        <div class="stat-card stat-red"><div class="stat-label">Críticos 🔴</div><div class="stat-value" id="stat-rojo">—</div></div>
+        <div class="stat-card stat-purple"><div class="stat-label">Empleados activos</div><div class="stat-value" id="stat-empleados">—</div></div>
+        <div class="stat-card stat-blue"><div class="stat-label">Clientes activos</div><div class="stat-value" id="stat-clientes">—</div></div>
+      </div>
       <div class="section">
-        <div class="section-header">
-          <div class="section-title">Estado proyectos</div>
-        </div>
+        <div class="section-header"><div class="section-title">Estado proyectos</div></div>
         <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Proyecto</th>
-                <th>Cliente</th>
-                <th>Compromiso</th>
-                <th>Estimada real</th>
-                <th>Desviación</th>
-                <th>Estado</th>
-                <th>Semáforo</th>
-              </tr>
-            </thead>
-            <tbody id="dashboard-tabla"></tbody>
-          </table>
+          <table><thead><tr>
+            <th>ID</th><th>Proyecto</th><th>Cliente</th><th>Compromiso</th>
+            <th>Est. real</th><th>Desviación</th><th>Estado</th><th>Semáforo</th>
+          </tr></thead><tbody id="dashboard-tabla"></tbody></table>
         </div>
       </div>
-
       <div class="section">
         <div class="section-header"><div class="section-title">Alertas activas</div></div>
         <div class="alert-list" id="dashboard-alertas"></div>
@@ -468,228 +327,226 @@
 
     <!-- PROYECTOS -->
     <div class="page" id="page-proyectos">
-      <div class="section-header" style="margin-bottom:20px">
-        <div class="section-title">Gestión de proyectos</div>
-        <button class="btn btn-primary btn-sm" onclick="abrirModalProyecto()">+ Nuevo proyecto</button>
+      <div class="section-header" style="margin-bottom:16px">
+        <div class="section-title" style="font-size:16px">Gestión de proyectos</div>
+        <button class="btn btn-primary btn-sm" onclick="abrirModal('modal-proyecto');limpiarForm('form-proyecto')">+ Nuevo proyecto</button>
       </div>
       <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th><th>Proyecto</th><th>Cliente</th>
-              <th>Compromiso</th><th>Resp. Ingeniería</th>
-              <th>Resp. Compras</th><th>Resp. Almacén</th>
-              <th>Resp. Montaje</th><th>Estado</th><th>Semáforo</th><th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="proyectos-tabla"></tbody>
-        </table>
+        <table><thead><tr>
+          <th>ID</th><th>Proyecto</th><th>Cliente</th><th>Compromiso</th>
+          <th>Ingeniería</th><th>Compras</th><th>Montaje</th>
+          <th>Valor €</th><th>Estado</th><th>Semáforo</th><th>Acciones</th>
+        </tr></thead><tbody id="proyectos-tabla"></tbody></table>
       </div>
     </div>
 
     <!-- GANTT -->
     <div class="page" id="page-gantt">
-      <div class="section-header" style="margin-bottom:20px">
-        <div class="section-title">Diagrama Gantt</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select id="gantt-proyecto-select" onchange="renderGantt()" style="width:auto">
-            <option value="">Todos los proyectos</option>
-          </select>
-        </div>
+      <div class="section-header" style="margin-bottom:16px">
+        <div class="section-title" style="font-size:16px">Diagrama Gantt</div>
+        <select id="gantt-filter" onchange="renderGantt()" style="width:auto">
+          <option value="">Todos los proyectos</option>
+        </select>
       </div>
-      <div class="gantt-wrap">
-        <div id="gantt-container"></div>
-      </div>
+      <div id="gantt-container" style="overflow-x:auto"></div>
     </div>
 
     <!-- TAREAS -->
     <div class="page" id="page-tareas">
-      <div class="section-header" style="margin-bottom:20px">
-        <div class="section-title">Tareas diarias</div>
-        <div style="display:flex;gap:8px">
-          <select id="tareas-proyecto-filter" onchange="renderTareas()" style="width:auto">
+      <div class="section-header" style="margin-bottom:16px">
+        <div class="section-title" style="font-size:16px">Tareas diarias</div>
+        <div class="gap-8">
+          <select id="tareas-filter" onchange="renderTareas()" style="width:auto">
             <option value="">Todos los proyectos</option>
           </select>
-          <button class="btn btn-primary btn-sm" onclick="abrirModalTarea()">+ Nueva tarea</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirModal('modal-tarea');limpiarForm('form-tarea');poblarSelectProyectos('t-proyecto')">+ Nueva tarea</button>
         </div>
       </div>
       <div id="tareas-container"></div>
     </div>
 
+    <!-- EQUIPO -->
+    <div class="page" id="page-equipo">
+      <div class="section-header" style="margin-bottom:16px">
+        <div class="section-title" style="font-size:16px">Gestión de equipo</div>
+        <button class="btn btn-primary btn-sm" onclick="abrirModal('modal-empleado');limpiarForm('form-empleado')">+ Nuevo empleado</button>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="filtrarEquipo('')" id="tab-todos">Todos</button>
+        <button class="tab-btn" onclick="filtrarEquipo('Ingeniería')" id="tab-ing">Ingeniería</button>
+        <button class="tab-btn" onclick="filtrarEquipo('Compras')" id="tab-com">Compras</button>
+        <button class="tab-btn" onclick="filtrarEquipo('Almacén')" id="tab-alm">Almacén</button>
+        <button class="tab-btn" onclick="filtrarEquipo('Montaje')" id="tab-mon">Montaje</button>
+        <button class="tab-btn" onclick="filtrarEquipo('Diseño')" id="tab-dis">Diseño</button>
+        <button class="tab-btn" onclick="filtrarEquipo('Otro')" id="tab-otro">Otros</button>
+      </div>
+      <div class="grid-cards" id="equipo-container"></div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="page" id="page-clientes">
+      <div class="section-header" style="margin-bottom:16px">
+        <div class="section-title" style="font-size:16px">Gestión de clientes</div>
+        <button class="btn btn-primary btn-sm" onclick="abrirModal('modal-cliente');limpiarForm('form-cliente')">+ Nuevo cliente</button>
+      </div>
+      <div class="grid-cards" id="clientes-container"></div>
+    </div>
+
     <!-- FINANCIERO -->
     <div class="page" id="page-financiero">
-      <div class="section-header" style="margin-bottom:20px">
-        <div class="section-title">🔒 Financiero — Solo gerente</div>
-        <button class="btn btn-primary btn-sm" onclick="abrirModalFinanciero()">+ Registrar hito</button>
+      <div class="section-header" style="margin-bottom:16px">
+        <div class="section-title" style="font-size:16px">🔒 Financiero — Solo gerente</div>
+        <button class="btn btn-primary btn-sm" onclick="abrirModal('modal-hito');limpiarForm('form-hito');poblarSelectProyectos('h-proyecto')">+ Nuevo hito cobro</button>
       </div>
       <div id="financiero-container"></div>
     </div>
 
     <!-- COMUNICACIONES -->
     <div class="page" id="page-comunicaciones">
-      <div class="section-header" style="margin-bottom:20px">
-        <div class="section-title">Comunicaciones</div>
-        <button class="btn btn-primary btn-sm" onclick="abrirModalComunicacion()">+ Nueva comunicación</button>
+      <div class="section-header" style="margin-bottom:16px">
+        <div class="section-title" style="font-size:16px">Comunicaciones</div>
+        <button class="btn btn-primary btn-sm" onclick="abrirModal('modal-comunicacion');limpiarForm('form-comunicacion');poblarSelectProyectos('c-proyecto')">+ Nueva comunicación</button>
       </div>
       <div id="comunicaciones-container"></div>
     </div>
 
     <!-- ALERTAS -->
     <div class="page" id="page-alertas">
-      <div class="section-header" style="margin-bottom:20px">
-        <div class="section-title">Centro de alertas</div>
+      <div class="section-header" style="margin-bottom:16px">
+        <div class="section-title" style="font-size:16px">Centro de alertas</div>
         <div class="sync-badge"><div class="sync-dot"></div>Tiempo real</div>
       </div>
       <div class="alert-list" id="alertas-container"></div>
     </div>
 
-  </div><!-- main -->
-</div><!-- app -->
+  </div>
+</div>
 
-<!-- MODAL PROYECTO -->
+<!-- ════════ MODALES ════════ -->
+
+<!-- PROYECTO -->
 <div class="modal-overlay" id="modal-proyecto">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="modal-proyecto-title">Nuevo proyecto</div>
       <button class="modal-close" onclick="cerrarModal('modal-proyecto')">×</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" id="form-proyecto">
       <div class="form-grid">
-        <div class="form-group full">
-          <label>Nombre del proyecto *</label>
-          <input type="text" id="p-nombre" placeholder="Nombre del proyecto">
+        <div class="form-group full"><label>Nombre del proyecto *</label><input type="text" id="p-nombre" placeholder="Nombre del proyecto"></div>
+        <div class="form-group"><label>Cliente *</label><select id="p-cliente-sel"><option value="">Seleccionar cliente</option></select></div>
+        <div class="form-group"><label>Valor contrato (€)</label><input type="number" id="p-valor" placeholder="0"></div>
+        <div class="form-group"><label>Fecha inicio *</label><input type="date" id="p-fecha-inicio"></div>
+        <div class="form-group"><label>Fecha compromiso *</label><input type="date" id="p-fecha-compromiso"></div>
+        <div class="form-group"><label>Fecha estimada real</label><input type="date" id="p-fecha-real"></div>
+        <div class="form-group"><label>Estado</label>
+          <select id="p-estado"><option>Activo</option><option>Pausado</option><option>Entregado</option><option>Cancelado</option></select>
         </div>
-        <div class="form-group">
-          <label>Cliente *</label>
-          <input type="text" id="p-cliente" placeholder="Nombre cliente">
-        </div>
-        <div class="form-group">
-          <label>Email cliente</label>
-          <input type="email" id="p-email-cliente" placeholder="cliente@empresa.com">
-        </div>
-        <div class="form-group">
-          <label>Fecha inicio *</label>
-          <input type="date" id="p-fecha-inicio">
-        </div>
-        <div class="form-group">
-          <label>Fecha compromiso *</label>
-          <input type="date" id="p-fecha-compromiso">
-        </div>
-        <div class="form-group">
-          <label>Fecha estimada real</label>
-          <input type="date" id="p-fecha-real">
-        </div>
-        <div class="form-group">
-          <label>Valor contrato (€)</label>
-          <input type="number" id="p-valor" placeholder="0">
-        </div>
-        <div class="form-group">
-          <label>Estado</label>
-          <select id="p-estado">
-            <option>Activo</option>
-            <option>Pausado</option>
-            <option>Entregado</option>
-            <option>Cancelado</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Resp. Ingeniería</label>
-          <input type="text" id="p-resp-ing" placeholder="Nombre responsable">
-        </div>
-        <div class="form-group">
-          <label>Resp. Compras</label>
-          <input type="text" id="p-resp-com" placeholder="Nombre responsable">
-        </div>
-        <div class="form-group">
-          <label>Resp. Almacén</label>
-          <input type="text" id="p-resp-alm" placeholder="Nombre responsable">
-        </div>
-        <div class="form-group">
-          <label>Resp. Montaje</label>
-          <input type="text" id="p-resp-mon" placeholder="Nombre responsable">
-        </div>
-        <div class="form-group full">
-          <label>Notas gerente (privado)</label>
-          <textarea id="p-notas" placeholder="Solo visible para gerente..."></textarea>
-        </div>
+        <div class="form-group"><label>Resp. Ingeniería</label><select id="p-resp-ing"><option value="">Sin asignar</option></select></div>
+        <div class="form-group"><label>Resp. Compras</label><select id="p-resp-com"><option value="">Sin asignar</option></select></div>
+        <div class="form-group"><label>Resp. Almacén</label><select id="p-resp-alm"><option value="">Sin asignar</option></select></div>
+        <div class="form-group"><label>Resp. Montaje</label><select id="p-resp-mon"><option value="">Sin asignar</option></select></div>
+        <div class="form-group"><label>Resp. Diseño</label><select id="p-resp-dis"><option value="">Sin asignar</option></select></div>
+        <div class="form-group full"><label>Notas gerente (privado)</label><textarea id="p-notas" placeholder="Solo visible para gerente..."></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="cerrarModal('modal-proyecto')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarProyecto()">💾 Guardar en Excel</button>
+      <button class="btn btn-primary" onclick="guardarProyecto()">💾 Guardar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL TAREA -->
+<!-- EMPLEADO -->
+<div class="modal-overlay" id="modal-empleado">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-empleado-title">Nuevo empleado</div>
+      <button class="modal-close" onclick="cerrarModal('modal-empleado')">×</button>
+    </div>
+    <div class="modal-body" id="form-empleado">
+      <div class="form-grid">
+        <div class="form-group"><label>Nombre *</label><input type="text" id="e-nombre" placeholder="Nombre"></div>
+        <div class="form-group"><label>Apellidos *</label><input type="text" id="e-apellidos" placeholder="Apellidos"></div>
+        <div class="form-group"><label>Rol *</label>
+          <select id="e-rol">
+            <option>Ingeniería</option><option>Compras</option><option>Almacén</option>
+            <option>Montaje</option><option>Diseño</option><option>Otro</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Especialidad / Cargo</label><input type="text" id="e-cargo" placeholder="Ej: Ingeniero Senior, Diseñador..."></div>
+        <div class="form-group"><label>Email</label><input type="email" id="e-email" placeholder="email@empresa.com"></div>
+        <div class="form-group"><label>Teléfono</label><input type="tel" id="e-tel" placeholder="+34 600 000 000"></div>
+        <div class="form-group"><label>Fecha alta</label><input type="date" id="e-alta"></div>
+        <div class="form-group"><label>Estado</label>
+          <select id="e-estado"><option>Activo</option><option>Vacaciones</option><option>Baja</option><option>Inactivo</option></select>
+        </div>
+        <div class="form-group full"><label>Notas</label><textarea id="e-notas" placeholder="Observaciones..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modal-empleado')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEmpleado()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENTE -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-cliente-title">Nuevo cliente</div>
+      <button class="modal-close" onclick="cerrarModal('modal-cliente')">×</button>
+    </div>
+    <div class="modal-body" id="form-cliente">
+      <div class="form-grid">
+        <div class="form-group full"><label>Nombre empresa *</label><input type="text" id="cl-nombre" placeholder="Nombre de la empresa"></div>
+        <div class="form-group"><label>CIF/NIF</label><input type="text" id="cl-cif" placeholder="A12345678"></div>
+        <div class="form-group"><label>Sector</label><input type="text" id="cl-sector" placeholder="Industria, Construcción..."></div>
+        <div class="form-group"><label>Email principal</label><input type="email" id="cl-email" placeholder="contacto@empresa.com"></div>
+        <div class="form-group"><label>Teléfono</label><input type="tel" id="cl-tel" placeholder="+34 900 000 000"></div>
+        <div class="form-group"><label>Ciudad</label><input type="text" id="cl-ciudad" placeholder="Bilbao"></div>
+        <div class="form-group full"><label>Dirección</label><input type="text" id="cl-direccion" placeholder="Calle, número, CP..."></div>
+        <div class="form-group full"><label>Notas</label><textarea id="cl-notas" placeholder="Observaciones del cliente..."></textarea></div>
+      </div>
+      <div class="divider"></div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:12px">Personas de contacto</div>
+      <div id="contactos-lista"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addContacto()" style="margin-top:8px">+ Añadir contacto</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modal-cliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCliente()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAREA -->
 <div class="modal-overlay" id="modal-tarea">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Nueva tarea / Actualización diaria</div>
+      <div class="modal-title">Actualización diaria / Nueva tarea</div>
       <button class="modal-close" onclick="cerrarModal('modal-tarea')">×</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" id="form-tarea">
       <div class="form-grid">
-        <div class="form-group full">
-          <label>Proyecto *</label>
-          <select id="t-proyecto"></select>
+        <div class="form-group full"><label>Proyecto *</label><select id="t-proyecto"></select></div>
+        <div class="form-group"><label>Fase *</label>
+          <select id="t-fase"><option>Ingeniería</option><option>Compras</option><option>Almacén</option><option>Montaje</option><option>Diseño</option><option>Validación</option><option>Entrega</option></select>
         </div>
-        <div class="form-group">
-          <label>Fase *</label>
-          <select id="t-fase">
-            <option>Ingeniería</option>
-            <option>Compras</option>
-            <option>Almacén</option>
-            <option>Montaje</option>
-            <option>Validación</option>
-            <option>Entrega</option>
-          </select>
+        <div class="form-group"><label>Responsable</label><select id="t-responsable"><option value="">Sin asignar</option></select></div>
+        <div class="form-group"><label>Fecha inicio</label><input type="date" id="t-inicio"></div>
+        <div class="form-group"><label>Fecha fin prevista *</label><input type="date" id="t-fin-prev"></div>
+        <div class="form-group"><label>Fecha fin real</label><input type="date" id="t-fin-real"></div>
+        <div class="form-group"><label>Avance % *</label><input type="number" id="t-pct" min="0" max="100" placeholder="0"></div>
+        <div class="form-group"><label>Estado *</label>
+          <select id="t-estado"><option>Pendiente</option><option>En curso</option><option>Bloqueado</option><option>Completado</option></select>
         </div>
-        <div class="form-group">
-          <label>Responsable</label>
-          <input type="text" id="t-responsable" placeholder="Nombre">
+        <div class="form-group"><label>Riesgo *</label>
+          <select id="t-riesgo"><option>🟢 Verde</option><option>🟡 Amarillo</option><option>🔴 Rojo</option></select>
         </div>
-        <div class="form-group">
-          <label>Fecha inicio</label>
-          <input type="date" id="t-inicio">
-        </div>
-        <div class="form-group">
-          <label>Fecha fin prevista *</label>
-          <input type="date" id="t-fin-prev">
-        </div>
-        <div class="form-group">
-          <label>Fecha fin real</label>
-          <input type="date" id="t-fin-real">
-        </div>
-        <div class="form-group">
-          <label>Avance % *</label>
-          <input type="number" id="t-pct" min="0" max="100" placeholder="0">
-        </div>
-        <div class="form-group">
-          <label>Estado *</label>
-          <select id="t-estado">
-            <option>Pendiente</option>
-            <option>En curso</option>
-            <option>Bloqueado</option>
-            <option>Completado</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Riesgo *</label>
-          <select id="t-riesgo">
-            <option>🟢 Verde</option>
-            <option>🟡 Amarillo</option>
-            <option>🔴 Rojo</option>
-          </select>
-        </div>
-        <div class="form-group full">
-          <label>Comentario hoy * (obligatorio)</label>
-          <textarea id="t-comentario" placeholder="Describe el avance de hoy..."></textarea>
-        </div>
-        <div class="form-group full">
-          <label>Bloqueo (si existe)</label>
-          <textarea id="t-bloqueo" placeholder="Describe el bloqueo si aplica..."></textarea>
-        </div>
+        <div class="form-group full"><label>Comentario hoy * (obligatorio)</label><textarea id="t-comentario" placeholder="Describe el avance de hoy..."></textarea></div>
+        <div class="form-group full"><label>Bloqueo (si existe)</label><textarea id="t-bloqueo" placeholder="Describe el bloqueo si aplica..."></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -699,93 +556,52 @@
   </div>
 </div>
 
-<!-- MODAL COMUNICACION -->
+<!-- HITO -->
+<div class="modal-overlay" id="modal-hito">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nuevo hito de cobro</div>
+      <button class="modal-close" onclick="cerrarModal('modal-hito')">×</button>
+    </div>
+    <div class="modal-body" id="form-hito">
+      <div class="form-grid">
+        <div class="form-group full"><label>Proyecto *</label><select id="h-proyecto"></select></div>
+        <div class="form-group full"><label>Nombre hito *</label><input type="text" id="h-nombre" placeholder="Ej: Anticipo 30%, Entrega final..."></div>
+        <div class="form-group"><label>Importe (€) *</label><input type="number" id="h-importe" placeholder="0"></div>
+        <div class="form-group"><label>Fecha prevista *</label><input type="date" id="h-fecha-prev"></div>
+        <div class="form-group"><label>Fecha cobro real</label><input type="date" id="h-fecha-real"></div>
+        <div class="form-group"><label>Cobrado</label><select id="h-cobrado"><option>No</option><option>Sí</option></select></div>
+        <div class="form-group full"><label>Condición de cobro</label><input type="text" id="h-condicion" placeholder="Ej: Tras entrega montaje completo"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modal-hito')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarHito()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMUNICACION -->
 <div class="modal-overlay" id="modal-comunicacion">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">Nueva comunicación</div>
       <button class="modal-close" onclick="cerrarModal('modal-comunicacion')">×</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" id="form-comunicacion">
       <div class="form-grid">
-        <div class="form-group full">
-          <label>Proyecto</label>
-          <select id="c-proyecto"></select>
+        <div class="form-group full"><label>Proyecto</label><select id="c-proyecto"></select></div>
+        <div class="form-group"><label>Tipo *</label>
+          <select id="c-tipo"><option>Email_Cliente</option><option>Email_Equipo</option><option>Nota_Interna</option><option>Llamada</option></select>
         </div>
-        <div class="form-group">
-          <label>Tipo *</label>
-          <select id="c-tipo">
-            <option>Email_Cliente</option>
-            <option>Email_Equipo</option>
-            <option>Nota_Interna</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Destinatario *</label>
-          <input type="text" id="c-destinatario" placeholder="Email o nombre">
-        </div>
-        <div class="form-group full">
-          <label>Asunto *</label>
-          <input type="text" id="c-asunto" placeholder="Asunto del mensaje">
-        </div>
-        <div class="form-group full">
-          <label>Contenido *</label>
-          <textarea id="c-contenido" style="min-height:120px" placeholder="Escribe el mensaje..."></textarea>
-        </div>
+        <div class="form-group"><label>Destinatario *</label><input type="text" id="c-destinatario" placeholder="Email o nombre"></div>
+        <div class="form-group full"><label>Asunto *</label><input type="text" id="c-asunto" placeholder="Asunto del mensaje"></div>
+        <div class="form-group full"><label>Contenido *</label><textarea id="c-contenido" style="min-height:100px" placeholder="Escribe el mensaje..."></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="cerrarModal('modal-comunicacion')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarComunicacion()">💾 Guardar registro</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL FINANCIERO -->
-<div class="modal-overlay" id="modal-financiero">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Nuevo hito de cobro</div>
-      <button class="modal-close" onclick="cerrarModal('modal-financiero')">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group full">
-          <label>Proyecto *</label>
-          <select id="f-proyecto"></select>
-        </div>
-        <div class="form-group full">
-          <label>Nombre hito *</label>
-          <input type="text" id="f-nombre" placeholder="Ej: Anticipo 30%, Entrega final...">
-        </div>
-        <div class="form-group">
-          <label>Importe (€) *</label>
-          <input type="number" id="f-importe" placeholder="0">
-        </div>
-        <div class="form-group">
-          <label>Fecha prevista cobro *</label>
-          <input type="date" id="f-fecha-prev">
-        </div>
-        <div class="form-group">
-          <label>Fecha cobro real</label>
-          <input type="date" id="f-fecha-real">
-        </div>
-        <div class="form-group">
-          <label>Cobrado</label>
-          <select id="f-cobrado">
-            <option>No</option>
-            <option>Sí</option>
-          </select>
-        </div>
-        <div class="form-group full">
-          <label>Condición de cobro</label>
-          <input type="text" id="f-condicion" placeholder="Ej: Tras entrega montaje completo">
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="cerrarModal('modal-financiero')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarHito()">💾 Guardar hito</button>
+      <button class="btn btn-primary" onclick="guardarComunicacion()">💾 Guardar</button>
     </div>
   </div>
 </div>
@@ -793,1041 +609,136 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script>
-// ── CONFIG AZURE ──────────────────────────────────────────────────────────────
-const MSAL_CONFIG = {
-  auth: {
-    clientId: "9d96ea82-4566-4b29-9828-f2a75c6a460c",
-    authority: "https://login.microsoftonline.com/04aa4ee8-8516-42c5-9f2a-525928251280",
-    redirectUri: "https://ortumik-cyber.github.io/control-proyectos/"
-  },
-  cache: { cacheLocation: "localStorage" }
+// ── FIREBASE CONFIG ────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyAVpyJ-l2wLOpzUup9y80luLeS1ff_BMq8",
+  authDomain: "panel-de-proyectos-15b3d.firebaseapp.com",
+  projectId: "panel-de-proyectos-15b3d",
+  storageBucket: "panel-de-proyectos-15b3d.firebasestorage.app",
+  messagingSenderId: "343212927045",
+  appId: "1:343212927045:web:4c2dbe837b9546a67d1b2c"
 };
-const SCOPES = ["Files.ReadWrite", "Sites.ReadWrite.All", "User.Read", "Mail.Send"];
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-let msalInstance = null;
-let currentUser = null;
-let accessToken = null;
-let excelFileId = null;
+// ── DATA CACHE ─────────────────────────────────────────────────────────────
+let DATA = { proyectos:[], tareas:[], empleados:[], clientes:[], hitos:[], comunicaciones:[] };
+let editingId = {};
 
-// DATOS LOCALES (cache)
-let DATA = {
-  proyectos: [],
-  tareas: [],
-  comunicaciones: [],
-  financiero: [],
-  hitos: [],
-  usuarios: [],
-  historial: []
+// ── COLORES ROL ────────────────────────────────────────────────────────────
+const ROL_COLOR = {
+  'Ingeniería':'#3b82f6','Compras':'#f59e0b','Almacén':'#8b5cf6',
+  'Montaje':'#22c55e','Diseño':'#f97316','Otro':'#64748b','Gerente':'#ef4444'
 };
+function rolColor(rol){ return ROL_COLOR[rol]||'#64748b'; }
+function rolBadge(rol){
+  const colors = {'Ingeniería':'badge-blue','Compras':'badge-yellow','Almacén':'badge-purple',
+    'Montaje':'badge-green','Diseño':'badge-orange','Otro':'badge-grey','Gerente':'badge-red'};
+  return `<span class="badge ${colors[rol]||'badge-grey'}">${rol}</span>`;
+}
 
-// ── MSAL INIT ──────────────────────────────────────────────────────────────────
-let msalReady = false;
+// ── INIT ───────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('dashboard-fecha').textContent =
+    'Hoy — ' + new Date().toLocaleDateString('es-ES',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  await cargarTodo();
+});
 
-async function initMSAL() {
+async function cargarTodo(){
+  setSyncStatus(false,'Sincronizando...');
   try {
-    msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
-    await msalInstance.initialize();
-    msalReady = true;
-    // Activar botón login
-    const btn = document.getElementById('btn-login');
-    const txt = document.getElementById('btn-login-text');
-    const note = document.getElementById('login-note');
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
-    if (txt) txt.textContent = 'Iniciar sesión con Microsoft';
-    if (note) note.textContent = 'Acceso exclusivo con cuenta Microsoft 365 autorizada';
-
-    const resp = await msalInstance.handleRedirectPromise();
-    if (resp) {
-      await onLoginSuccess(resp);
-      return;
-    }
-
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts.length > 0) {
-      try {
-        const silentResp = await msalInstance.acquireTokenSilent({
-          scopes: SCOPES, account: accounts[0]
-        });
-        await onLoginSuccess(silentResp);
-      } catch(e) {
-        // Sesión expirada → mostrar login normal
-        console.log("Silent token failed, showing login");
-      }
-    }
-  } catch(e) {
-    console.error("MSAL init error:", e);
-    // No mostrar toast aquí — puede ser init normal
-  }
-}
-
-async function iniciarSesion() {
-  if (!msalReady) {
-    // MSAL aún no inicializado — reintentar
-    try {
-      msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
-      await msalInstance.initialize();
-      msalReady = true;
-    // Activar botón login
-    const btn = document.getElementById('btn-login');
-    const txt = document.getElementById('btn-login-text');
-    const note = document.getElementById('login-note');
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
-    if (txt) txt.textContent = 'Iniciar sesión con Microsoft';
-    if (note) note.textContent = 'Acceso exclusivo con cuenta Microsoft 365 autorizada';
-    } catch(e) {
-      toast("Error inicializando Microsoft Auth. Recarga la página.", "error");
-      return;
-    }
-  }
-  try {
-    await msalInstance.loginRedirect({ scopes: SCOPES });
-  } catch(e) {
-    toast("Error al iniciar sesión: " + e.message, "error");
-  }
-}
-
-async function onLoginSuccess(authResult) {
-  accessToken = authResult.accessToken;
-  currentUser = authResult.account;
-  mostrarApp();
-  await cargarDatosUsuario();
-  await sincronizarTodo();
-}
-
-function cerrarSesion() {
-  msalInstance.logoutRedirect();
-}
-
-async function getToken() {
-  try {
-    const resp = await msalInstance.acquireTokenSilent({
-      scopes: SCOPES,
-      account: msalInstance.getAllAccounts()[0]
-    });
-    accessToken = resp.accessToken;
-    return accessToken;
-  } catch(e) {
-    toast("Sesión expirada. Reinicia sesión.", "error");
-    return null;
-  }
-}
-
-// ── UI ─────────────────────────────────────────────────────────────────────────
-function mostrarApp() {
-  document.getElementById("login-screen").style.display = "none";
-  document.getElementById("app").style.display = "block";
-}
-
-async function cargarDatosUsuario() {
-  try {
-    const token = await getToken();
-    const resp = await fetch("https://graph.microsoft.com/v1.0/me", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const user = await resp.json();
-    const nombre = user.displayName || user.userPrincipalName || "Usuario";
-    const iniciales = nombre.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase();
-    document.getElementById("user-name").textContent = nombre;
-    document.getElementById("user-avatar").textContent = iniciales;
-  } catch(e) {
-    document.getElementById("user-name").textContent = currentUser?.username || "Usuario";
-  }
-}
-
-function navTo(page) {
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-  document.getElementById("page-" + page).classList.add("active");
-  document.querySelector(`[data-page="${page}"]`).classList.add("active");
-  if (page === "gantt") renderGantt();
-  if (page === "tareas") renderTareas();
-  if (page === "financiero") renderFinanciero();
-  if (page === "comunicaciones") renderComunicaciones();
-  if (page === "alertas") renderAlertas();
-}
-
-function abrirModal(id) { document.getElementById(id).classList.add("open"); }
-function cerrarModal(id) { document.getElementById(id).classList.remove("open"); }
-function abrirModalProyecto() { limpiarFormProyecto(); abrirModal("modal-proyecto"); }
-function abrirModalTarea() { poblarSelectProyectos("t-proyecto"); abrirModal("modal-tarea"); }
-function abrirModalComunicacion() { poblarSelectProyectos("c-proyecto"); abrirModal("modal-comunicacion"); }
-function abrirModalFinanciero() { poblarSelectProyectos("f-proyecto"); abrirModal("modal-financiero"); }
-
-function poblarSelectProyectos(selectId) {
-  const sel = document.getElementById(selectId);
-  sel.innerHTML = DATA.proyectos.map(p =>
-    `<option value="${p.id}">${p.nombre}</option>`
-  ).join("");
-}
-
-function limpiarFormProyecto() {
-  ["p-nombre","p-cliente","p-email-cliente","p-fecha-inicio",
-   "p-fecha-compromiso","p-fecha-real","p-valor","p-notas",
-   "p-resp-ing","p-resp-com","p-resp-alm","p-resp-mon"]
-  .forEach(id => document.getElementById(id).value = "");
-  document.getElementById("p-estado").value = "Activo";
-}
-
-// ── GRAPH API — EXCEL ─────────────────────────────────────────────────────────
-async function encontrarOCrearExcel() {
-  const token = await getToken();
-  if (!token) return null;
-  setSyncStatus(false, "Buscando archivo...");
-
-  // Buscar archivo existente
-  try {
-    const searchResp = await fetch(
-      "https://graph.microsoft.com/v1.0/me/drive/root/children?$filter=name eq 'ControlProyectos.xlsx'",
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const searchData = await searchResp.json();
-    if (searchData.value && searchData.value.length > 0) {
-      excelFileId = searchData.value[0].id;
-      setSyncStatus(true, "Sincronizado");
-      return excelFileId;
-    }
-  } catch(e) {}
-
-  // Crear archivo nuevo si no existe
-  try {
-    const createResp = await fetch(
-      "https://graph.microsoft.com/v1.0/me/drive/root:/ControlProyectos.xlsx:/content",
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        },
-        body: new Uint8Array([]) // Excel vacío, se inicializa vía Graph
-      }
-    );
-    if (createResp.ok) {
-      const fileData = await createResp.json();
-      excelFileId = fileData.id;
-      await inicializarHojasExcel();
-      setSyncStatus(true, "Archivo creado");
-      return excelFileId;
-    }
-  } catch(e) {
-    console.error("Error crear Excel:", e);
-  }
-  return null;
-}
-
-async function inicializarHojasExcel() {
-  const token = await getToken();
-  if (!token || !excelFileId) return;
-  const hojas = ["PROYECTOS","TAREAS","COMUNICACIONES","FINANCIERO","HITOS_COBRO","HISTORIAL_RESP"];
-  for (const hoja of hojas) {
-    try {
-      await fetch(
-        `https://graph.microsoft.com/v1.0/me/drive/items/${excelFileId}/workbook/worksheets`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ name: hoja })
-        }
-      );
-    } catch(e) {}
-  }
-}
-
-async function leerHoja(hoja) {
-  const token = await getToken();
-  if (!token || !excelFileId) return [];
-  try {
-    const resp = await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${excelFileId}/workbook/worksheets/${hoja}/usedRange`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (!resp.ok) return [];
-    const data = await resp.json();
-    if (!data.values || data.values.length < 2) return [];
-    const headers = data.values[0];
-    return data.values.slice(1).map(row => {
-      const obj = {};
-      headers.forEach((h, i) => { obj[h] = row[i] || ""; });
-      return obj;
-    });
-  } catch(e) { return []; }
-}
-
-async function escribirFila(hoja, fila) {
-  const token = await getToken();
-  if (!token || !excelFileId) return false;
-  setSyncStatus(false, "Guardando...");
-  try {
-    // Obtener datos actuales para determinar próxima fila
-    const resp = await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${excelFileId}/workbook/worksheets/${hoja}/usedRange`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    let nextRow = 2;
-    let headers = [];
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data.values && data.values.length > 0) {
-        headers = data.values[0];
-        nextRow = data.values.length + 1;
-      }
-    }
-
-    // Si no hay headers, crear cabeceras
-    if (headers.length === 0) {
-      headers = Object.keys(fila);
-      await fetch(
-        `https://graph.microsoft.com/v1.0/me/drive/items/${excelFileId}/workbook/worksheets/${hoja}/range(address='A1:${colLetra(headers.length)}1')`,
-        {
-          method: "PATCH",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ values: [headers] })
-        }
-      );
-    }
-
-    const valores = headers.map(h => fila[h] || "");
-    const colFin = colLetra(headers.length);
-    await fetch(
-      `https://graph.microsoft.com/v1.0/me/drive/items/${excelFileId}/workbook/worksheets/${hoja}/range(address='A${nextRow}:${colFin}${nextRow}')`,
-      {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ values: [valores] })
-      }
-    );
-    setSyncStatus(true, "Guardado ✓");
-    return true;
-  } catch(e) {
-    setSyncStatus(true, "Error al guardar");
-    toast("Error al guardar en Excel: " + e.message, "error");
-    return false;
-  }
-}
-
-function colLetra(n) {
-  let s = "";
-  while (n > 0) {
-    n--;
-    s = String.fromCharCode(65 + (n % 26)) + s;
-    n = Math.floor(n / 26);
-  }
-  return s;
-}
-
-// ── SINCRONIZAR ───────────────────────────────────────────────────────────────
-async function sincronizarTodo() {
-  setSyncStatus(false, "Sincronizando...");
-  await encontrarOCrearExcel();
-  if (!excelFileId) {
-    setSyncStatus(true, "Sin archivo");
-    usarDatosDemo();
-    renderDashboard();
-    return;
-  }
-
-  const [proy, tar, com, fin, hit] = await Promise.all([
-    leerHoja("PROYECTOS"),
-    leerHoja("TAREAS"),
-    leerHoja("COMUNICACIONES"),
-    leerHoja("FINANCIERO"),
-    leerHoja("HITOS_COBRO")
-  ]);
-
-  DATA.proyectos    = proy.length ? proy : DATA.proyectos;
-  DATA.tareas       = tar.length  ? tar  : DATA.tareas;
-  DATA.comunicaciones = com.length ? com : DATA.comunicaciones;
-  DATA.financiero   = fin.length  ? fin  : DATA.financiero;
-  DATA.hitos        = hit.length  ? hit  : DATA.hitos;
-
-  setSyncStatus(true, "Sincronizado");
-  renderDashboard();
-  actualizarGanttSelect();
-  actualizarTareasSelect();
-}
-
-function usarDatosDemo() {
-  const hoy = new Date();
-  const mas5 = new Date(hoy); mas5.setDate(hoy.getDate() + 5);
-  const mas15 = new Date(hoy); mas15.setDate(hoy.getDate() + 15);
-  const mas2 = new Date(hoy); mas2.setDate(hoy.getDate() + 2);
-  const menos2 = new Date(hoy); menos2.setDate(hoy.getDate() - 2);
-  const fmt = d => d.toISOString().split("T")[0];
-
-  DATA.proyectos = [
-    { id: "P001", nombre: "Instalación Nave A", cliente: "Cliente Demo 1",
-      email_cliente: "cliente1@demo.com",
-      fecha_inicio: fmt(new Date(hoy.getFullYear(), hoy.getMonth()-1, 1)),
-      fecha_compromiso: fmt(mas15), fecha_estimada_real: fmt(mas15),
-      estado: "Activo", resp_ingenieria: "Ingeniero 1", resp_compras: "Compras 1",
-      resp_almacen: "Almacén 1", resp_montaje: "Montaje 1",
-      valor: "45000", notas: "" },
-    { id: "P002", nombre: "Reforma Oficinas B", cliente: "Cliente Demo 2",
-      email_cliente: "cliente2@demo.com",
-      fecha_inicio: fmt(new Date(hoy.getFullYear(), hoy.getMonth(), 1)),
-      fecha_compromiso: fmt(mas5), fecha_estimada_real: fmt(mas2),
-      estado: "Activo", resp_ingenieria: "Ingeniero 2", resp_compras: "Compras 1",
-      resp_almacen: "Almacén 1", resp_montaje: "Montaje 2",
-      valor: "28000", notas: "" },
-    { id: "P003", nombre: "Sistema Climatización C", cliente: "Cliente Demo 3",
-      email_cliente: "cliente3@demo.com",
-      fecha_inicio: fmt(new Date(hoy.getFullYear(), hoy.getMonth(), 10)),
-      fecha_compromiso: fmt(mas5), fecha_estimada_real: fmt(new Date(hoy.getFullYear(), hoy.getMonth()+1, 5)),
-      estado: "Activo", resp_ingenieria: "Ingeniero 1", resp_compras: "Compras 2",
-      resp_almacen: "Almacén 2", resp_montaje: "Montaje 1",
-      valor: "67000", notas: "" }
-  ];
-
-  DATA.tareas = [
-    { id_tarea: "T001", id_proyecto: "P001", fase: "Ingeniería", responsable: "Ingeniero 1",
-      fecha_inicio: fmt(new Date(hoy.getFullYear(), hoy.getMonth()-1, 1)),
-      fecha_fin_prevista: fmt(mas5), fecha_fin_real: "",
-      porcentaje: "75", estado: "En curso", riesgo: "🟢 Verde",
-      comentario_hoy: "Planos actualizados y enviados a compras",
-      fecha_comentario: fmt(hoy), bloqueo: "" },
-    { id_tarea: "T002", id_proyecto: "P002", fase: "Compras", responsable: "Compras 1",
-      fecha_inicio: fmt(new Date(hoy.getFullYear(), hoy.getMonth(), 1)),
-      fecha_fin_prevista: fmt(menos2), fecha_fin_real: "",
-      porcentaje: "40", estado: "Bloqueado", riesgo: "🔴 Rojo",
-      comentario_hoy: "Proveedor no confirma fecha entrega material",
-      fecha_comentario: fmt(hoy), bloqueo: "Proveedor principal sin stock" },
-    { id_tarea: "T003", id_proyecto: "P003", fase: "Montaje", responsable: "Montaje 1",
-      fecha_inicio: fmt(new Date(hoy.getFullYear(), hoy.getMonth(), 10)),
-      fecha_fin_prevista: fmt(mas15), fecha_fin_real: "",
-      porcentaje: "20", estado: "En curso", riesgo: "🟡 Amarillo",
-      comentario_hoy: "Inicio instalación equipos principal",
-      fecha_comentario: fmt(hoy), bloqueo: "" }
-  ];
-
-  DATA.hitos = [
-    { id_hito: "H001", id_financiero: "FIN001", nombre_hito: "Anticipo 30%",
-      importe: "13500", fecha_prevista: fmt(mas5), fecha_real: "", cobrado: "No",
-      condicion: "A la firma del contrato" },
-    { id_hito: "H002", id_financiero: "FIN001", nombre_hito: "Entrega parcial 40%",
-      importe: "18000", fecha_prevista: fmt(mas15), fecha_real: "", cobrado: "No",
-      condicion: "Tras instalación ingeniería" },
-    { id_hito: "H003", id_financiero: "FIN002", nombre_hito: "Total obra",
-      importe: "28000", fecha_prevista: fmt(mas5), fecha_real: "", cobrado: "No",
-      condicion: "Entrega y firma cliente" }
-  ];
-
-  DATA.comunicaciones = [
-    { id_comunicacion: "C001", id_proyecto: "P002", fecha: fmt(hoy),
-      tipo: "Email_Cliente", destinatario: "cliente2@demo.com",
-      asunto: "Actualización estado proyecto", contenido: "Le informamos del estado actual...",
-      enviado_por: "Gerente" }
-  ];
-}
-
-// ── SEMÁFORO ──────────────────────────────────────────────────────────────────
-function calcularSemaforo(proyecto) {
-  if (!proyecto.fecha_compromiso || !proyecto.fecha_estimada_real) return "grey";
-  const comp = new Date(proyecto.fecha_compromiso);
-  const est  = new Date(proyecto.fecha_estimada_real);
-  const dias = Math.round((est - comp) / (1000 * 60 * 60 * 24));
-  if (dias <= 0) return "green";
-  if (dias <= 3) return "yellow";
-  return "red";
-}
-
-function semaforoBadge(color) {
-  const map = {
-    green:  '<span class="badge badge-green">🟢 Verde</span>',
-    yellow: '<span class="badge badge-yellow">🟡 Amarillo</span>',
-    red:    '<span class="badge badge-red">🔴 Rojo</span>',
-    grey:   '<span class="badge badge-grey">— Sin fecha</span>'
-  };
-  return map[color] || map.grey;
-}
-
-function estadoBadge(estado) {
-  const map = {
-    "Activo":    '<span class="badge badge-blue">Activo</span>',
-    "Pausado":   '<span class="badge badge-yellow">Pausado</span>',
-    "Entregado": '<span class="badge badge-green">Entregado</span>',
-    "Cancelado": '<span class="badge badge-red">Cancelado</span>'
-  };
-  return map[estado] || `<span class="badge badge-grey">${estado}</span>`;
-}
-
-// ── DASHBOARD ─────────────────────────────────────────────────────────────────
-function renderDashboard() {
-  const hoy = new Date();
-  document.getElementById("dashboard-fecha").textContent =
-    "Hoy — " + hoy.toLocaleDateString("es-ES", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
-
-  const activos   = DATA.proyectos.filter(p => p.estado === "Activo" || p.Estado === "Activo");
-  const semaforos = activos.map(p => calcularSemaforo(p));
-  document.getElementById("stat-activos").textContent   = activos.length || DATA.proyectos.length;
-  document.getElementById("stat-verde").textContent     = semaforos.filter(s => s === "green").length;
-  document.getElementById("stat-amarillo").textContent  = semaforos.filter(s => s === "yellow").length;
-  document.getElementById("stat-rojo").textContent      = semaforos.filter(s => s === "red").length;
-
-  const tbody = document.getElementById("dashboard-tabla");
-  if (!DATA.proyectos.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">📁</div>Sin proyectos. Añade el primero.</div></td></tr>`;
-  } else {
-    tbody.innerHTML = DATA.proyectos.map(p => {
-      const sem = calcularSemaforo(p);
-      const comp = p.fecha_compromiso || p.Fecha_Compromiso || "—";
-      const real = p.fecha_estimada_real || p.Fecha_Estimada_Real || "—";
-      const nombre = p.nombre || p.Nombre_Proyecto || "—";
-      const cliente = p.cliente || p.Nombre_Cliente || "—";
-      const estado = p.estado || p.Estado || "—";
-      let desv = "—";
-      if (comp !== "—" && real !== "—") {
-        const d = Math.round((new Date(real) - new Date(comp)) / 86400000);
-        desv = d > 0 ? `+${d} días` : d === 0 ? "En plazo" : `${d} días`;
-      }
-      return `<tr>
-        <td><strong>${p.id || p.ID_Proyecto || "—"}</strong></td>
-        <td>${nombre}</td>
-        <td>${cliente}</td>
-        <td>${comp}</td>
-        <td>${real}</td>
-        <td>${desv}</td>
-        <td>${estadoBadge(estado)}</td>
-        <td>${semaforoBadge(sem)}</td>
-      </tr>`;
-    }).join("");
-  }
-
-  // Alertas dashboard
-  const alertasEl = document.getElementById("dashboard-alertas");
-  const alertas = generarAlertas();
-  if (!alertas.length) {
-    alertasEl.innerHTML = `<div class="empty"><div class="empty-icon">✅</div>Sin alertas activas</div>`;
-  } else {
-    alertasEl.innerHTML = alertas.slice(0,5).map(a => `
-      <div class="alert-item ${a.clase}">
-        <div class="alert-icon">${a.icono}</div>
-        <div class="alert-content">
-          <div class="alert-title">${a.titulo}</div>
-          <div class="alert-desc">${a.desc}</div>
-          <div class="alert-time">${a.tiempo}</div>
-        </div>
-      </div>
-    `).join("");
-  }
-}
-
-function generarAlertas() {
-  const alertas = [];
-  const hoy = new Date();
-
-  DATA.proyectos.forEach(p => {
-    const sem = calcularSemaforo(p);
-    const nombre = p.nombre || p.Nombre_Proyecto || "Proyecto";
-    if (sem === "red") {
-      alertas.push({
-        clase: "alerta-roja", icono: "🔴",
-        titulo: `RETRASO CRÍTICO — ${nombre}`,
-        desc: `Retraso superior a 3 días. Revisar estado y avisar al cliente.`,
-        tiempo: "Hoy"
-      });
-    }
-    if (sem === "yellow") {
-      alertas.push({
-        clase: "alerta-amarilla", icono: "🟡",
-        titulo: `Riesgo plazo — ${nombre}`,
-        desc: `Desviación de 1-3 días. Monitorizar de cerca.`,
-        tiempo: "Hoy"
-      });
-    }
-  });
-
-  DATA.tareas.forEach(t => {
-    const nom = p => (DATA.proyectos.find(x => (x.id||x.ID_Proyecto) === t.id_proyecto) || {}).nombre || t.id_proyecto;
-    if ((t.estado || t.Estado) === "Bloqueado") {
-      alertas.push({
-        clase: "alerta-roja", icono: "🚨",
-        titulo: `BLOQUEO — ${nom(t.id_proyecto)} / ${t.fase || t.Fase}`,
-        desc: t.bloqueo || t.Bloqueo || "Tarea bloqueada sin descripción",
-        tiempo: "Hoy"
-      });
-    }
-    const fechaComentario = t.fecha_comentario || t.Fecha_Comentario;
-    if (fechaComentario !== hoy.toISOString().split("T")[0] && (t.estado||t.Estado) !== "Completado") {
-      alertas.push({
-        clase: "alerta-amarilla", icono: "⚠️",
-        titulo: `Sin actualización — ${t.responsable || t.Responsable || "Responsable"}`,
-        desc: `Tarea en ${t.fase||t.Fase} sin comentario hoy`,
-        tiempo: "17:00"
-      });
-    }
-  });
-
-  DATA.hitos.forEach(h => {
-    if ((h.cobrado||h.Cobrado) === "No" && (h.fecha_prevista||h.Fecha_Prevista)) {
-      const dias = Math.round((new Date(h.fecha_prevista||h.Fecha_Prevista) - hoy) / 86400000);
-      if (dias >= 0 && dias <= 14) {
-        alertas.push({
-          clase: "alerta-info", icono: "💶",
-          titulo: `Cobro próximo — ${h.nombre_hito || h.Nombre_Hito}`,
-          desc: `${h.importe || h.Importe}€ previstos en ${dias} días`,
-          tiempo: h.fecha_prevista || h.Fecha_Prevista
-        });
-      }
-    }
-  });
-
-  return alertas;
-}
-
-// ── PROYECTOS ─────────────────────────────────────────────────────────────────
-async function guardarProyecto() {
-  const nombre = document.getElementById("p-nombre").value.trim();
-  const cliente = document.getElementById("p-cliente").value.trim();
-  const fechaComp = document.getElementById("p-fecha-compromiso").value;
-  if (!nombre || !cliente || !fechaComp) {
-    toast("Nombre, cliente y fecha compromiso son obligatorios", "error"); return;
-  }
-  const id = "P" + String(DATA.proyectos.length + 1).padStart(3,"0");
-  const fila = {
-    ID_Proyecto: id,
-    Nombre_Proyecto: nombre,
-    Nombre_Cliente: cliente,
-    Email_Cliente: document.getElementById("p-email-cliente").value,
-    Fecha_Inicio: document.getElementById("p-fecha-inicio").value,
-    Fecha_Compromiso: fechaComp,
-    Fecha_Estimada_Real: document.getElementById("p-fecha-real").value || fechaComp,
-    Estado: document.getElementById("p-estado").value,
-    Valor_Contrato: document.getElementById("p-valor").value,
-    Resp_Ingenieria: document.getElementById("p-resp-ing").value,
-    Resp_Compras: document.getElementById("p-resp-com").value,
-    Resp_Almacen: document.getElementById("p-resp-alm").value,
-    Resp_Montaje: document.getElementById("p-resp-mon").value,
-    Notas_Gerente: document.getElementById("p-notas").value
-  };
-
-  DATA.proyectos.push({ id, nombre, cliente,
-    email_cliente: fila.Email_Cliente,
-    fecha_inicio: fila.Fecha_Inicio,
-    fecha_compromiso: fila.Fecha_Compromiso,
-    fecha_estimada_real: fila.Fecha_Estimada_Real,
-    estado: fila.Estado, valor: fila.Valor_Contrato,
-    resp_ingenieria: fila.Resp_Ingenieria, resp_compras: fila.Resp_Compras,
-    resp_almacen: fila.Resp_Almacen, resp_montaje: fila.Resp_Montaje,
-    notas: fila.Notas_Gerente });
-
-  const ok = await escribirFila("PROYECTOS", fila);
-  if (ok) {
-    toast("Proyecto guardado en Excel ✓", "success");
-    cerrarModal("modal-proyecto");
+    const [p,t,e,cl,h,c] = await Promise.all([
+      db.collection('proyectos').get(),
+      db.collection('tareas').get(),
+      db.collection('empleados').get(),
+      db.collection('clientes').get(),
+      db.collection('hitos').get(),
+      db.collection('comunicaciones').get()
+    ]);
+    DATA.proyectos     = p.docs.map(d=>({id:d.id,...d.data()}));
+    DATA.tareas        = t.docs.map(d=>({id:d.id,...d.data()}));
+    DATA.empleados     = e.docs.map(d=>({id:d.id,...d.data()}));
+    DATA.clientes      = cl.docs.map(d=>({id:d.id,...d.data()}));
+    DATA.hitos         = h.docs.map(d=>({id:d.id,...d.data()}));
+    DATA.comunicaciones= c.docs.map(d=>({id:d.id,...d.data()}));
+    setSyncStatus(true,'Sincronizado ✓');
     renderDashboard();
     renderProyectos();
-    actualizarGanttSelect();
-    actualizarTareasSelect();
+    actualizarSelectores();
+  } catch(e){
+    setSyncStatus(false,'Error conexión');
+    toast('Error conectando con Firebase: '+e.message,'error');
   }
 }
 
-function renderProyectos() {
-  const tbody = document.getElementById("proyectos-tabla");
-  if (!DATA.proyectos.length) {
-    tbody.innerHTML = `<tr><td colspan="11"><div class="empty"><div class="empty-icon">📁</div>Sin proyectos aún</div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = DATA.proyectos.map(p => {
-    const sem = calcularSemaforo(p);
-    return `<tr>
-      <td><strong>${p.id||p.ID_Proyecto}</strong></td>
-      <td>${p.nombre||p.Nombre_Proyecto}</td>
-      <td>${p.cliente||p.Nombre_Cliente}</td>
-      <td>${p.fecha_compromiso||p.Fecha_Compromiso||"—"}</td>
-      <td>${p.resp_ingenieria||p.Resp_Ingenieria||"—"}</td>
-      <td>${p.resp_compras||p.Resp_Compras||"—"}</td>
-      <td>${p.resp_almacen||p.Resp_Almacen||"—"}</td>
-      <td>${p.resp_montaje||p.Resp_Montaje||"—"}</td>
-      <td>${estadoBadge(p.estado||p.Estado||"—")}</td>
-      <td>${semaforoBadge(sem)}</td>
-      <td>
-        <button class="btn btn-secondary btn-sm" onclick="editarProyecto('${p.id||p.ID_Proyecto}')">✏️</button>
-      </td>
-    </tr>`;
-  }).join("");
+// ── NAV ────────────────────────────────────────────────────────────────────
+function navTo(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+  const renders = {gantt:renderGantt,tareas:renderTareas,equipo:()=>renderEquipo(''),
+    clientes:renderClientes,financiero:renderFinanciero,comunicaciones:renderComunicaciones,alertas:renderAlertas};
+  if(renders[page]) renders[page]();
 }
 
-function editarProyecto(id) {
-  const p = DATA.proyectos.find(x => (x.id||x.ID_Proyecto) === id);
-  if (!p) return;
-  document.getElementById("p-nombre").value = p.nombre||p.Nombre_Proyecto||"";
-  document.getElementById("p-cliente").value = p.cliente||p.Nombre_Cliente||"";
-  document.getElementById("p-email-cliente").value = p.email_cliente||p.Email_Cliente||"";
-  document.getElementById("p-fecha-inicio").value = p.fecha_inicio||p.Fecha_Inicio||"";
-  document.getElementById("p-fecha-compromiso").value = p.fecha_compromiso||p.Fecha_Compromiso||"";
-  document.getElementById("p-fecha-real").value = p.fecha_estimada_real||p.Fecha_Estimada_Real||"";
-  document.getElementById("p-valor").value = p.valor||p.Valor_Contrato||"";
-  document.getElementById("p-estado").value = p.estado||p.Estado||"Activo";
-  document.getElementById("p-resp-ing").value = p.resp_ingenieria||p.Resp_Ingenieria||"";
-  document.getElementById("p-resp-com").value = p.resp_compras||p.Resp_Compras||"";
-  document.getElementById("p-resp-alm").value = p.resp_almacen||p.Resp_Almacen||"";
-  document.getElementById("p-resp-mon").value = p.resp_montaje||p.Resp_Montaje||"";
-  document.getElementById("p-notas").value = p.notas||p.Notas_Gerente||"";
-  document.getElementById("modal-proyecto-title").textContent = "Editar proyecto";
-  abrirModal("modal-proyecto");
+// ── SEMÁFORO ───────────────────────────────────────────────────────────────
+function semaforo(p){
+  if(!p.fechaCompromiso||!p.fechaEstimadaReal) return 'grey';
+  const d=Math.round((new Date(p.fechaEstimadaReal)-new Date(p.fechaCompromiso))/86400000);
+  if(d<=0) return 'green'; if(d<=3) return 'yellow'; return 'red';
+}
+function semaforoBadge(color){
+  const m={green:'<span class="badge badge-green">🟢 Verde</span>',
+    yellow:'<span class="badge badge-yellow">🟡 Amarillo</span>',
+    red:'<span class="badge badge-red">🔴 Rojo</span>',
+    grey:'<span class="badge badge-grey">— Sin fecha</span>'};
+  return m[color]||m.grey;
+}
+function estadoBadge(e){
+  const m={Activo:'badge-blue',Pausado:'badge-yellow',Entregado:'badge-green',Cancelado:'badge-red'};
+  return `<span class="badge ${m[e]||'badge-grey'}">${e||'—'}</span>`;
 }
 
-// ── GANTT ─────────────────────────────────────────────────────────────────────
-function actualizarGanttSelect() {
-  const sel = document.getElementById("gantt-proyecto-select");
-  const opts = DATA.proyectos.map(p =>
-    `<option value="${p.id||p.ID_Proyecto}">${p.nombre||p.Nombre_Proyecto}</option>`
-  ).join("");
-  sel.innerHTML = `<option value="">Todos los proyectos</option>` + opts;
-}
+// ── DASHBOARD ──────────────────────────────────────────────────────────────
+function renderDashboard(){
+  const activos=DATA.proyectos.filter(p=>p.estado==='Activo');
+  const sems=activos.map(p=>semaforo(p));
+  document.getElementById('stat-activos').textContent=activos.length||DATA.proyectos.length;
+  document.getElementById('stat-verde').textContent=sems.filter(s=>s==='green').length;
+  document.getElementById('stat-amarillo').textContent=sems.filter(s=>s==='yellow').length;
+  document.getElementById('stat-rojo').textContent=sems.filter(s=>s==='red').length;
+  document.getElementById('stat-empleados').textContent=DATA.empleados.filter(e=>e.estado==='Activo').length;
+  document.getElementById('stat-clientes').textContent=DATA.clientes.length;
 
-function renderGantt() {
-  const container = document.getElementById("gantt-container");
-  const filtro = document.getElementById("gantt-proyecto-select").value;
-  const proyectos = filtro ? DATA.proyectos.filter(p => (p.id||p.ID_Proyecto) === filtro) : DATA.proyectos;
-
-  if (!proyectos.length) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">📅</div>Sin proyectos para mostrar</div>`;
-    return;
+  const tbody=document.getElementById('dashboard-tabla');
+  if(!DATA.proyectos.length){
+    tbody.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-icon">📁</div>Sin proyectos. Añade el primero.</div></td></tr>`;
+  } else {
+    tbody.innerHTML=DATA.proyectos.map(p=>{
+      const sem=semaforo(p);
+      const comp=p.fechaCompromiso||'—'; const real=p.fechaEstimadaReal||'—';
+      let desv='—';
+      if(comp!=='—'&&real!=='—'){
+        const d=Math.round((new Date(real)-new Date(comp))/86400000);
+        desv=d>0?`+${d} días`:d===0?'En plazo':`${d} días`;
+      }
+      const nombreCliente=DATA.clientes.find(c=>c.id===p.clienteId)?.nombre||p.clienteNombre||'—';
+      return `<tr>
+        <td><strong>${p.codigo||'—'}</strong></td>
+        <td>${p.nombre||'—'}</td>
+        <td>${nombreCliente}</td>
+        <td>${comp}</td><td>${real}</td>
+        <td style="color:${desv.includes('+')?'var(--red)':desv==='En plazo'?'var(--green)':'var(--text)'}">${desv}</td>
+        <td>${estadoBadge(p.estado)}</td>
+        <td>${semaforoBadge(sem)}</td>
+      </tr>`;
+    }).join('');
   }
 
-  const hoy = new Date();
-  // Calcular rango total
-  let minFecha = new Date(hoy); minFecha.setDate(hoy.getDate() - 30);
-  let maxFecha = new Date(hoy); maxFecha.setDate(hoy.getDate() + 60);
-
-  proyectos.forEach(p => {
-    const ini = new Date(p.fecha_inicio||p.Fecha_Inicio||hoy);
-    const fin = new Date(p.fecha_compromiso||p.Fecha_Compromiso||maxFecha);
-    if (ini < minFecha) minFecha = ini;
-    if (fin > maxFecha) maxFecha = fin;
-  });
-
-  const totalDias = Math.round((maxFecha - minFecha) / 86400000);
-  const LABEL_W = 220;
-  const DAY_W = Math.max(18, Math.min(32, (window.innerWidth - LABEL_W - 48) / totalDias));
-
-  const FASES = [
-    { key: "Ingeniería", cls: "gantt-bar-ing", offsetPct: 0, durPct: 0.25 },
-    { key: "Compras",    cls: "gantt-bar-com", offsetPct: 0.1, durPct: 0.2 },
-    { key: "Almacén",   cls: "gantt-bar-alm", offsetPct: 0.25, durPct: 0.15 },
-    { key: "Montaje",   cls: "gantt-bar-mon", offsetPct: 0.35, durPct: 0.35 },
-    { key: "Validación",cls: "gantt-bar-val", offsetPct: 0.7, durPct: 0.2 }
-  ];
-
-  // Meses para header
-  const meses = [];
-  let cursor = new Date(minFecha);
-  while (cursor <= maxFecha) {
-    const dias = new Date(cursor.getFullYear(), cursor.getMonth()+1, 0).getDate() - cursor.getDate() + 1;
-    const diasMes = Math.min(dias, totalDias);
-    meses.push({ label: cursor.toLocaleDateString("es-ES",{month:"short",year:"2-digit"}), dias: diasMes });
-    cursor = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
-  }
-
-  const headerCols = `${LABEL_W}px ${meses.map(m => `${m.dias * DAY_W}px`).join(" ")}`;
-  const todayOffset = Math.round((hoy - minFecha) / 86400000);
-
-  let html = `<div class="gantt-container">`;
-
-  // Header meses
-  html += `<div class="gantt-header" style="grid-template-columns:${headerCols}">
-    <div style="padding:0 16px;font-size:11px;font-weight:700;color:var(--text3)">PROYECTO / FASE</div>
-    ${meses.map(m => `<div class="gantt-month-label">${m.label}</div>`).join("")}
-  </div>`;
-
-  // Filas proyectos
-  proyectos.forEach(p => {
-    const pNombre = p.nombre||p.Nombre_Proyecto||"—";
-    const pId = p.id||p.ID_Proyecto;
-    const inicio = new Date(p.fecha_inicio||p.Fecha_Inicio||hoy);
-    const fin = new Date(p.fecha_compromiso||p.Fecha_Compromiso||maxFecha);
-    const durTotal = Math.round((fin - inicio) / 86400000);
-    const sem = calcularSemaforo(p);
-    const semDot = sem === "green" ? "🟢" : sem === "yellow" ? "🟡" : "🔴";
-
-    // Fila proyecto
-    html += `<div class="gantt-row" style="grid-template-columns:${headerCols};background:var(--surface2)">
-      <div class="gantt-label">
-        <div>${semDot} <strong>${pNombre}</strong></div>
-        <div class="gantt-label-sub">${p.cliente||p.Nombre_Cliente||""}</div>
-      </div>
-      <div style="grid-column:2/-1;position:relative;height:52px">
-        <div class="gantt-today" style="left:${todayOffset * DAY_W}px"></div>
-      </div>
-    </div>`;
-
-    // Filas fases
-    const tareasProyecto = DATA.tareas.filter(t => (t.id_proyecto||t.ID_Proyecto) === pId);
-    FASES.forEach(fase => {
-      const tareaFase = tareasProyecto.find(t => (t.fase||t.Fase) === fase.key);
-      const pct = tareaFase ? parseInt(tareaFase.porcentaje||tareaFase.Porcentaje||0) : 0;
-      const faseInicio = new Date(inicio); faseInicio.setDate(inicio.getDate() + Math.round(durTotal * fase.offsetPct));
-      const faseDur = Math.max(7, Math.round(durTotal * fase.durPct));
-      const barLeft = Math.round((faseInicio - minFecha) / 86400000) * DAY_W;
-      const barWidth = faseDur * DAY_W;
-      const riesgo = tareaFase ? (tareaFase.riesgo||tareaFase.Riesgo||"🟢 Verde") : "🟢 Verde";
-      const opacity = tareaFase ? 1 : 0.4;
-
-      html += `<div class="gantt-row" style="grid-template-columns:${headerCols}">
-        <div class="gantt-label" style="padding-left:32px">
-          <div style="font-size:11px;color:var(--text2)">${fase.key}</div>
-          <div style="font-size:10px;color:var(--text3)">${pct}% · ${riesgo}</div>
-        </div>
-        <div style="grid-column:2/-1;position:relative;height:52px">
-          <div class="gantt-today" style="left:${todayOffset * DAY_W}px"></div>
-          <div class="gantt-bar ${fase.cls}"
-               style="left:${barLeft}px;width:${barWidth}px;top:14px;opacity:${opacity}"
-               title="${fase.key}: ${pct}%">
-            ${pct}%
-          </div>
-        </div>
-      </div>`;
-    });
-  });
-
-  html += `</div>`;
-  container.innerHTML = html;
-}
-
-// ── TAREAS ────────────────────────────────────────────────────────────────────
-function actualizarTareasSelect() {
-  const sel = document.getElementById("tareas-proyecto-filter");
-  sel.innerHTML = `<option value="">Todos los proyectos</option>` +
-    DATA.proyectos.map(p => `<option value="${p.id||p.ID_Proyecto}">${p.nombre||p.Nombre_Proyecto}</option>`).join("");
-}
-
-function renderTareas() {
-  const filtro = document.getElementById("tareas-proyecto-filter").value;
-  const tareas = filtro ? DATA.tareas.filter(t => (t.id_proyecto||t.ID_Proyecto) === filtro) : DATA.tareas;
-  const container = document.getElementById("tareas-container");
-  if (!tareas.length) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">✅</div>Sin tareas. Añade la primera.</div>`;
-    return;
-  }
-  const hoy = new Date().toISOString().split("T")[0];
-  container.innerHTML = tareas.map(t => {
-    const pct = parseInt(t.porcentaje||t.Porcentaje||0);
-    const riesgo = t.riesgo||t.Riesgo||"🟢 Verde";
-    const estado = t.estado||t.Estado||"—";
-    const actualizado = (t.fecha_comentario||t.Fecha_Comentario) === hoy;
-    const pBarClass = riesgo.includes("Verde") ? "progress-green" : riesgo.includes("Amarillo") ? "progress-yellow" : "progress-red";
-    const pNombre = (DATA.proyectos.find(p => (p.id||p.ID_Proyecto) === (t.id_proyecto||t.ID_Proyecto))||{}).nombre || t.id_proyecto||t.ID_Proyecto||"—";
-    return `<div class="tarea-card">
-      <div class="tarea-header">
-        <div class="tarea-title">${t.fase||t.Fase||"—"} — ${pNombre}</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          ${riesgo.includes("Verde") ? '<span class="badge badge-green">🟢 Verde</span>' :
-            riesgo.includes("Amarillo") ? '<span class="badge badge-yellow">🟡 Amarillo</span>' :
-            '<span class="badge badge-red">🔴 Rojo</span>'}
-          ${actualizado ? '<span class="badge badge-green">✅ Actualizado hoy</span>' : '<span class="badge badge-yellow">⚠️ Pendiente actualización</span>'}
-        </div>
-      </div>
-      <div class="tarea-meta">
-        <span>👤 ${t.responsable||t.Responsable||"—"}</span>
-        <span>📅 Fin previsto: ${t.fecha_fin_prevista||t.Fecha_Fin_Prevista||"—"}</span>
-        <span>Estado: ${estado}</span>
-      </div>
-      <div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:12px;color:var(--text2)">Avance</span>
-          <span style="font-size:12px;font-weight:700">${pct}%</span>
-        </div>
-        <div class="progress-bar"><div class="progress-fill ${pBarClass}" style="width:${pct}%"></div></div>
-      </div>
-      ${t.comentario_hoy||t.Comentario_Hoy ? `<div style="font-size:12px;color:var(--text2);background:var(--surface2);padding:8px 10px;border-radius:6px;margin-bottom:8px">💬 ${t.comentario_hoy||t.Comentario_Hoy}</div>` : ""}
-      ${(t.bloqueo||t.Bloqueo) ? `<div style="font-size:12px;color:var(--red);background:rgba(239,68,68,0.08);padding:8px 10px;border-radius:6px;border-left:3px solid var(--red)">🚨 ${t.bloqueo||t.Bloqueo}</div>` : ""}
-    </div>`;
-  }).join("");
-}
-
-async function guardarTarea() {
-  const comentario = document.getElementById("t-comentario").value.trim();
-  const proyecto = document.getElementById("t-proyecto").value;
-  const finPrev = document.getElementById("t-fin-prev").value;
-  if (!comentario) { toast("Comentario diario es obligatorio", "error"); return; }
-  if (!proyecto)   { toast("Selecciona un proyecto", "error"); return; }
-  if (!finPrev)    { toast("Fecha fin prevista es obligatoria", "error"); return; }
-
-  const id = "T" + String(DATA.tareas.length + 1).padStart(3,"0");
-  const hoy = new Date().toISOString().split("T")[0];
-  const fila = {
-    ID_Tarea: id,
-    ID_Proyecto: proyecto,
-    Fase: document.getElementById("t-fase").value,
-    Responsable: document.getElementById("t-responsable").value,
-    Fecha_Inicio: document.getElementById("t-inicio").value,
-    Fecha_Fin_Prevista: finPrev,
-    Fecha_Fin_Real: document.getElementById("t-fin-real").value,
-    Porcentaje: document.getElementById("t-pct").value,
-    Estado: document.getElementById("t-estado").value,
-    Riesgo: document.getElementById("t-riesgo").value,
-    Comentario_Hoy: comentario,
-    Fecha_Comentario: hoy,
-    Bloqueo: document.getElementById("t-bloqueo").value
-  };
-
-  DATA.tareas.push({
-    id_tarea: id, id_proyecto: proyecto,
-    fase: fila.Fase, responsable: fila.Responsable,
-    fecha_inicio: fila.Fecha_Inicio, fecha_fin_prevista: fila.Fecha_Fin_Prevista,
-    fecha_fin_real: fila.Fecha_Fin_Real, porcentaje: fila.Porcentaje,
-    estado: fila.Estado, riesgo: fila.Riesgo,
-    comentario_hoy: fila.Comentario_Hoy, fecha_comentario: fila.Fecha_Comentario,
-    bloqueo: fila.Bloqueo
-  });
-
-  const ok = await escribirFila("TAREAS", fila);
-  if (ok) {
-    toast("Tarea guardada en Excel ✓", "success");
-    cerrarModal("modal-tarea");
-    renderTareas();
-    renderDashboard();
-  }
-}
-
-// ── FINANCIERO ────────────────────────────────────────────────────────────────
-function renderFinanciero() {
-  const container = document.getElementById("financiero-container");
-  if (!DATA.proyectos.length) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">💶</div>Sin proyectos financieros</div>`;
-    return;
-  }
-  container.innerHTML = DATA.proyectos.map(p => {
-    const pId = p.id||p.ID_Proyecto;
-    const hitosP = DATA.hitos.filter(h => {
-      const finId = h.id_financiero||h.ID_Financiero||"";
-      return finId.includes(pId) || (h.id_proyecto||h.ID_Proyecto) === pId;
-    });
-    const totalHitos = hitosP.reduce((s, h) => s + parseFloat(h.importe||h.Importe||0), 0);
-    const cobrado = hitosP.filter(h => (h.cobrado||h.Cobrado) === "Sí").reduce((s,h) => s + parseFloat(h.importe||h.Importe||0), 0);
-    const pendiente = totalHitos - cobrado;
-    const valor = parseFloat(p.valor||p.Valor_Contrato||0);
-
-    return `<div class="fin-card">
-      <div class="fin-header">
-        <div>
-          <div class="fin-proyecto">${p.nombre||p.Nombre_Proyecto}</div>
-          <div class="fin-cliente">${p.cliente||p.Nombre_Cliente}</div>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="abrirModalFinancieroProyecto('${pId}')">+ Hito</button>
-      </div>
-      <div class="fin-grid">
-        <div class="fin-item"><label>Valor contrato</label><div class="value" style="color:var(--accent)">${valor.toLocaleString("es-ES")}€</div></div>
-        <div class="fin-item"><label>Cobrado</label><div class="value" style="color:var(--green)">${cobrado.toLocaleString("es-ES")}€</div></div>
-        <div class="fin-item"><label>Pendiente</label><div class="value" style="color:${pendiente > 0 ? "var(--yellow)" : "var(--green)"}">${pendiente.toLocaleString("es-ES")}€</div></div>
-      </div>
-      ${hitosP.length ? `<div class="hitos-list">
-        ${hitosP.map(h => `<div class="hito-row">
-          <span>${(h.cobrado||h.Cobrado)==="Sí" ? "✅" : "⏳"}</span>
-          <span class="hito-nombre">${h.nombre_hito||h.Nombre_Hito}</span>
-          <span class="hito-importe">${parseFloat(h.importe||h.Importe||0).toLocaleString("es-ES")}€</span>
-          <span class="hito-fecha">${h.fecha_prevista||h.Fecha_Prevista||"—"}</span>
-          <span class="badge ${(h.cobrado||h.Cobrado)==="Sí" ? "badge-green" : "badge-grey"}">${h.cobrado||h.Cobrado}</span>
-        </div>`).join("")}
-      </div>` : `<div style="font-size:12px;color:var(--text3)">Sin hitos registrados</div>`}
-    </div>`;
-  }).join("");
-}
-
-function abrirModalFinancieroProyecto(pId) {
-  poblarSelectProyectos("f-proyecto");
-  document.getElementById("f-proyecto").value = pId;
-  abrirModal("modal-financiero");
-}
-
-async function guardarHito() {
-  const nombre = document.getElementById("f-nombre").value.trim();
-  const importe = document.getElementById("f-importe").value;
-  const fechaPrev = document.getElementById("f-fecha-prev").value;
-  const proyecto = document.getElementById("f-proyecto").value;
-  if (!nombre || !importe || !fechaPrev) {
-    toast("Nombre, importe y fecha son obligatorios", "error"); return;
-  }
-  const id = "H" + String(DATA.hitos.length + 1).padStart(3,"0");
-  const fila = {
-    ID_Hito: id,
-    ID_Financiero: "FIN-" + proyecto,
-    ID_Proyecto: proyecto,
-    Nombre_Hito: nombre,
-    Importe: importe,
-    Fecha_Prevista: fechaPrev,
-    Fecha_Real: document.getElementById("f-fecha-real").value,
-    Cobrado: document.getElementById("f-cobrado").value,
-    Condicion_Cobro: document.getElementById("f-condicion").value
-  };
-  DATA.hitos.push({ id_hito: id, id_financiero: "FIN-"+proyecto, id_proyecto: proyecto,
-    nombre_hito: nombre, importe, fecha_prevista: fechaPrev,
-    fecha_real: fila.Fecha_Real, cobrado: fila.Cobrado, condicion: fila.Condicion_Cobro });
-
-  const ok = await escribirFila("HITOS_COBRO", fila);
-  if (ok) {
-    toast("Hito guardado en Excel ✓", "success");
-    cerrarModal("modal-financiero");
-    renderFinanciero();
-  }
-}
-
-// ── COMUNICACIONES ────────────────────────────────────────────────────────────
-function renderComunicaciones() {
-  const container = document.getElementById("comunicaciones-container");
-  if (!DATA.comunicaciones.length) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">✉️</div>Sin comunicaciones registradas</div>`;
-    return;
-  }
-  const tipoColor = { Email_Cliente: "badge-blue", Email_Equipo: "badge-green", Nota_Interna: "badge-grey", Alerta_Sistema: "badge-red" };
-  container.innerHTML = [...DATA.comunicaciones].reverse().map(c => {
-    const tipo = c.tipo||c.Tipo||"—";
-    const pNombre = (DATA.proyectos.find(p => (p.id||p.ID_Proyecto) === (c.id_proyecto||c.ID_Proyecto))||{}).nombre||c.id_proyecto||c.ID_Proyecto||"—";
-    return `<div class="com-item">
-      <div class="com-header">
-        <div style="display:flex;gap:8px;align-items:center">
-          <span class="badge ${tipoColor[tipo]||"badge-grey"}">${tipo.replace("_"," ")}</span>
-          <span style="font-size:12px;color:var(--text2)">${pNombre}</span>
-        </div>
-        <span class="com-fecha">${c.fecha||c.Fecha||"—"}</span>
-      </div>
-      <div class="com-asunto">${c.asunto||c.Asunto||"—"}</div>
-      <div class="com-contenido">${c.contenido||c.Contenido||"—"}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px">→ ${c.destinatario||c.Destinatario||"—"}</div>
-    </div>`;
-  }).join("");
-}
-
-async function guardarComunicacion() {
-  const tipo = document.getElementById("c-tipo").value;
-  const dest = document.getElementById("c-destinatario").value.trim();
-  const asunto = document.getElementById("c-asunto").value.trim();
-  const contenido = document.getElementById("c-contenido").value.trim();
-  if (!dest || !asunto || !contenido) {
-    toast("Destinatario, asunto y contenido son obligatorios", "error"); return;
-  }
-  const id = "C" + String(DATA.comunicaciones.length + 1).padStart(3,"0");
-  const hoy = new Date().toISOString().split("T")[0];
-  const fila = {
-    ID_Comunicacion: id,
-    ID_Proyecto: document.getElementById("c-proyecto").value,
-    Fecha: hoy, Tipo: tipo, Destinatario: dest,
-    Asunto: asunto, Contenido: contenido,
-    Enviado_Por: document.getElementById("user-name").textContent
-  };
-  DATA.comunicaciones.push({ id_comunicacion: id, id_proyecto: fila.ID_Proyecto,
-    fecha: hoy, tipo, destinatario: dest, asunto, contenido, enviado_por: fila.Enviado_Por });
-
-  const ok = await escribirFila("COMUNICACIONES", fila);
-  if (ok) {
-    toast("Comunicación registrada en Excel ✓", "success");
-    cerrarModal("modal-comunicacion");
-    renderComunicaciones();
-  }
-}
-
-// ── ALERTAS ───────────────────────────────────────────────────────────────────
-function renderAlertas() {
-  const container = document.getElementById("alertas-container");
-  const alertas = generarAlertas();
-  if (!alertas.length) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">✅</div>Sin alertas activas. Todo en orden.</div>`;
-    return;
-  }
-  container.innerHTML = alertas.map(a => `
+  const alertasEl=document.getElementById('dashboard-alertas');
+  const alertas=generarAlertas();
+  alertasEl.innerHTML=alertas.length?alertas.slice(0,6).map(a=>`
     <div class="alert-item ${a.clase}">
       <div class="alert-icon">${a.icono}</div>
       <div class="alert-content">
@@ -1835,42 +746,738 @@ function renderAlertas() {
         <div class="alert-desc">${a.desc}</div>
         <div class="alert-time">${a.tiempo}</div>
       </div>
-    </div>
-  `).join("");
+    </div>`).join(''):`<div class="empty"><div class="empty-icon">✅</div>Sin alertas activas</div>`;
 }
 
-// ── UTILS ─────────────────────────────────────────────────────────────────────
-function setSyncStatus(ok, label) {
-  document.getElementById("sync-dot").style.background = ok ? "var(--green)" : "var(--yellow)";
-  document.getElementById("sync-label").textContent = label;
-}
-
-function toast(msg, tipo = "info") {
-  const container = document.getElementById("toast-container");
-  const el = document.createElement("div");
-  el.className = `toast toast-${tipo}`;
-  const icons = { success: "✅", error: "❌", info: "ℹ️" };
-  el.innerHTML = `<span>${icons[tipo]||"ℹ️"}</span><span>${msg}</span>`;
-  container.appendChild(el);
-  setTimeout(() => el.remove(), 4000);
-}
-
-// Cerrar modal al clicar fuera
-document.querySelectorAll(".modal-overlay").forEach(overlay => {
-  overlay.addEventListener("click", e => {
-    if (e.target === overlay) overlay.classList.remove("open");
+function generarAlertas(){
+  const alertas=[];
+  const hoy=new Date();
+  DATA.proyectos.forEach(p=>{
+    const sem=semaforo(p);
+    if(sem==='red') alertas.push({clase:'alerta-roja',icono:'🔴',titulo:`RETRASO CRÍTICO — ${p.nombre}`,desc:'Retraso superior a 3 días. Revisar y avisar al cliente.',tiempo:'Hoy'});
+    if(sem==='yellow') alertas.push({clase:'alerta-amarilla',icono:'🟡',titulo:`Riesgo plazo — ${p.nombre}`,desc:'Desviación de 1-3 días. Monitorizar.',tiempo:'Hoy'});
   });
+  DATA.tareas.forEach(t=>{
+    const pNombre=DATA.proyectos.find(p=>p.id===t.proyectoId)?.nombre||t.proyectoId||'—';
+    if(t.estado==='Bloqueado') alertas.push({clase:'alerta-roja',icono:'🚨',titulo:`BLOQUEO — ${pNombre} / ${t.fase}`,desc:t.bloqueo||'Tarea bloqueada',tiempo:'Hoy'});
+    const fc=t.fechaComentario;
+    if(fc&&fc!==hoy.toISOString().split('T')[0]&&t.estado!=='Completado')
+      alertas.push({clase:'alerta-amarilla',icono:'⚠️',titulo:`Sin actualización — ${t.responsableNombre||'Responsable'}`,desc:`Tarea en ${t.fase} sin comentario hoy`,tiempo:'17:00'});
+  });
+  DATA.hitos.forEach(h=>{
+    if(h.cobrado==='No'&&h.fechaPrevista){
+      const dias=Math.round((new Date(h.fechaPrevista)-hoy)/86400000);
+      if(dias>=0&&dias<=14) alertas.push({clase:'alerta-info',icono:'💶',
+        titulo:`Cobro próximo — ${h.nombre}`,
+        desc:`${parseFloat(h.importe||0).toLocaleString('es-ES')}€ previstos en ${dias} días`,
+        tiempo:h.fechaPrevista});
+    }
+  });
+  return alertas;
+}
+
+// ── PROYECTOS ──────────────────────────────────────────────────────────────
+function renderProyectos(){
+  const tbody=document.getElementById('proyectos-tabla');
+  if(!DATA.proyectos.length){
+    tbody.innerHTML=`<tr><td colspan="11"><div class="empty"><div class="empty-icon">📁</div>Sin proyectos aún</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML=DATA.proyectos.map(p=>{
+    const sem=semaforo(p);
+    const nombreCliente=DATA.clientes.find(c=>c.id===p.clienteId)?.nombre||p.clienteNombre||'—';
+    const ing=DATA.empleados.find(e=>e.id===p.respIngId)?.nombre||p.respIngNombre||'—';
+    const com=DATA.empleados.find(e=>e.id===p.respComId)?.nombre||p.respComNombre||'—';
+    const mon=DATA.empleados.find(e=>e.id===p.respMonId)?.nombre||p.respMonNombre||'—';
+    return `<tr>
+      <td><strong>${p.codigo||'—'}</strong></td>
+      <td>${p.nombre||'—'}</td>
+      <td>${nombreCliente}</td>
+      <td>${p.fechaCompromiso||'—'}</td>
+      <td>${ing}</td><td>${com}</td><td>${mon}</td>
+      <td>${parseFloat(p.valor||0).toLocaleString('es-ES')}€</td>
+      <td>${estadoBadge(p.estado)}</td>
+      <td>${semaforoBadge(sem)}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn-icon" onclick="editarProyecto('${p.id}')">✏️</button>
+        <button class="btn-icon" onclick="confirmarEliminar('proyectos','${p.id}','el proyecto')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function guardarProyecto(){
+  const nombre=document.getElementById('p-nombre').value.trim();
+  const fechaComp=document.getElementById('p-fecha-compromiso').value;
+  if(!nombre||!fechaComp){toast('Nombre y fecha compromiso son obligatorios','error');return;}
+  const clienteId=document.getElementById('p-cliente-sel').value;
+  const clienteNombre=document.getElementById('p-cliente-sel').options[document.getElementById('p-cliente-sel').selectedIndex]?.text||'';
+  const respIngId=document.getElementById('p-resp-ing').value;
+  const respIngNombre=document.getElementById('p-resp-ing').options[document.getElementById('p-resp-ing').selectedIndex]?.text||'';
+  const respComId=document.getElementById('p-resp-com').value;
+  const respComNombre=document.getElementById('p-resp-com').options[document.getElementById('p-resp-com').selectedIndex]?.text||'';
+  const respAlmId=document.getElementById('p-resp-alm').value;
+  const respAlmNombre=document.getElementById('p-resp-alm').options[document.getElementById('p-resp-alm').selectedIndex]?.text||'';
+  const respMonId=document.getElementById('p-resp-mon').value;
+  const respMonNombre=document.getElementById('p-resp-mon').options[document.getElementById('p-resp-mon').selectedIndex]?.text||'';
+  const respDisId=document.getElementById('p-resp-dis').value;
+  const respDisNombre=document.getElementById('p-resp-dis').options[document.getElementById('p-resp-dis').selectedIndex]?.text||'';
+
+  const data={
+    nombre,clienteId,clienteNombre,
+    fechaInicio:document.getElementById('p-fecha-inicio').value,
+    fechaCompromiso:fechaComp,
+    fechaEstimadaReal:document.getElementById('p-fecha-real').value||fechaComp,
+    estado:document.getElementById('p-estado').value,
+    valor:document.getElementById('p-valor').value,
+    respIngId,respIngNombre,respComId,respComNombre,
+    respAlmId,respAlmNombre,respMonId,respMonNombre,
+    respDisId,respDisNombre,
+    notas:document.getElementById('p-notas').value,
+    updatedAt:new Date().toISOString()
+  };
+
+  try {
+    if(editingId.proyecto){
+      await db.collection('proyectos').doc(editingId.proyecto).update(data);
+      toast('Proyecto actualizado ✓','success');
+    } else {
+      const count=DATA.proyectos.length+1;
+      data.codigo='P'+String(count).padStart(3,'0');
+      data.createdAt=new Date().toISOString();
+      await db.collection('proyectos').add(data);
+      toast('Proyecto guardado en Firebase ✓','success');
+    }
+    editingId.proyecto=null;
+    cerrarModal('modal-proyecto');
+    await cargarTodo();
+  } catch(e){toast('Error: '+e.message,'error');}
+}
+
+function editarProyecto(id){
+  const p=DATA.proyectos.find(x=>x.id===id);
+  if(!p) return;
+  editingId.proyecto=id;
+  document.getElementById('modal-proyecto-title').textContent='Editar proyecto';
+  poblarSelectProyectoForm();
+  document.getElementById('p-nombre').value=p.nombre||'';
+  document.getElementById('p-cliente-sel').value=p.clienteId||'';
+  document.getElementById('p-valor').value=p.valor||'';
+  document.getElementById('p-fecha-inicio').value=p.fechaInicio||'';
+  document.getElementById('p-fecha-compromiso').value=p.fechaCompromiso||'';
+  document.getElementById('p-fecha-real').value=p.fechaEstimadaReal||'';
+  document.getElementById('p-estado').value=p.estado||'Activo';
+  document.getElementById('p-resp-ing').value=p.respIngId||'';
+  document.getElementById('p-resp-com').value=p.respComId||'';
+  document.getElementById('p-resp-alm').value=p.respAlmId||'';
+  document.getElementById('p-resp-mon').value=p.respMonId||'';
+  document.getElementById('p-resp-dis').value=p.respDisId||'';
+  document.getElementById('p-notas').value=p.notas||'';
+  abrirModal('modal-proyecto');
+}
+
+// ── EMPLEADOS ──────────────────────────────────────────────────────────────
+function renderEquipo(filtroRol){
+  const container=document.getElementById('equipo-container');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const tabMap={'':'tab-todos','Ingeniería':'tab-ing','Compras':'tab-com','Almacén':'tab-alm','Montaje':'tab-mon','Diseño':'tab-dis','Otro':'tab-otro'};
+  if(tabMap[filtroRol]) document.getElementById(tabMap[filtroRol])?.classList.add('active');
+
+  const lista=filtroRol?DATA.empleados.filter(e=>e.rol===filtroRol):DATA.empleados;
+  if(!lista.length){
+    container.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">👥</div>Sin empleados${filtroRol?' en '+filtroRol:''}. Añade el primero.</div>`;
+    return;
+  }
+  container.innerHTML=lista.map(e=>{
+    const iniciales=(e.nombre||'?')[0]+(e.apellidos||'?')[0];
+    const estadoColor={Activo:'var(--green)',Vacaciones:'var(--yellow)',Baja:'var(--red)',Inactivo:'var(--text3)'};
+    return `<div class="person-card">
+      <div class="person-header">
+        <div class="person-avatar" style="background:${rolColor(e.rol)}">${iniciales.toUpperCase()}</div>
+        <div>
+          <div class="person-name">${e.nombre||''} ${e.apellidos||''}</div>
+          <div class="person-role">${e.cargo||e.rol||'—'}</div>
+        </div>
+      </div>
+      <div style="margin-bottom:8px">${rolBadge(e.rol)} <span class="badge" style="background:transparent;border:1px solid var(--border);color:${estadoColor[e.estado]||'var(--text2)'}">${e.estado||'Activo'}</span></div>
+      <div class="person-info">
+        ${e.email?`<span>✉️ ${e.email}</span>`:''}
+        ${e.tel?`<span>📞 ${e.tel}</span>`:''}
+        ${e.alta?`<span>📅 Alta: ${e.alta}</span>`:''}
+      </div>
+      <div class="person-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editarEmpleado('${e.id}')">✏️ Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmarEliminar('empleados','${e.id}','el empleado')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filtrarEquipo(rol){ renderEquipo(rol); }
+
+async function guardarEmpleado(){
+  const nombre=document.getElementById('e-nombre').value.trim();
+  if(!nombre){toast('Nombre es obligatorio','error');return;}
+  const data={
+    nombre,
+    apellidos:document.getElementById('e-apellidos').value.trim(),
+    rol:document.getElementById('e-rol').value,
+    cargo:document.getElementById('e-cargo').value.trim(),
+    email:document.getElementById('e-email').value.trim(),
+    tel:document.getElementById('e-tel').value.trim(),
+    alta:document.getElementById('e-alta').value,
+    estado:document.getElementById('e-estado').value,
+    notas:document.getElementById('e-notas').value,
+    updatedAt:new Date().toISOString()
+  };
+  try {
+    if(editingId.empleado){
+      await db.collection('empleados').doc(editingId.empleado).update(data);
+      toast('Empleado actualizado ✓','success');
+    } else {
+      data.createdAt=new Date().toISOString();
+      await db.collection('empleados').add(data);
+      toast('Empleado guardado ✓','success');
+    }
+    editingId.empleado=null;
+    cerrarModal('modal-empleado');
+    await cargarTodo();
+    renderEquipo('');
+    actualizarSelectores();
+  } catch(e){toast('Error: '+e.message,'error');}
+}
+
+function editarEmpleado(id){
+  const e=DATA.empleados.find(x=>x.id===id);
+  if(!e) return;
+  editingId.empleado=id;
+  document.getElementById('modal-empleado-title').textContent='Editar empleado';
+  document.getElementById('e-nombre').value=e.nombre||'';
+  document.getElementById('e-apellidos').value=e.apellidos||'';
+  document.getElementById('e-rol').value=e.rol||'Ingeniería';
+  document.getElementById('e-cargo').value=e.cargo||'';
+  document.getElementById('e-email').value=e.email||'';
+  document.getElementById('e-tel').value=e.tel||'';
+  document.getElementById('e-alta').value=e.alta||'';
+  document.getElementById('e-estado').value=e.estado||'Activo';
+  document.getElementById('e-notas').value=e.notas||'';
+  abrirModal('modal-empleado');
+}
+
+// ── CLIENTES ───────────────────────────────────────────────────────────────
+let contactosTemp=[];
+function renderClientes(){
+  const container=document.getElementById('clientes-container');
+  if(!DATA.clientes.length){
+    container.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🏢</div>Sin clientes. Añade el primero.</div>`;
+    return;
+  }
+  container.innerHTML=DATA.clientes.map(cl=>{
+    const proyectos=DATA.proyectos.filter(p=>p.clienteId===cl.id);
+    return `<div class="person-card">
+      <div class="person-header">
+        <div class="person-avatar" style="background:var(--accent2);font-size:16px">🏢</div>
+        <div>
+          <div class="person-name">${cl.nombre||'—'}</div>
+          <div class="person-role">${cl.sector||'—'} · ${cl.ciudad||'—'}</div>
+        </div>
+      </div>
+      <div class="person-info" style="margin-bottom:8px">
+        ${cl.email?`<span>✉️ ${cl.email}</span>`:''}
+        ${cl.tel?`<span>📞 ${cl.tel}</span>`:''}
+        ${cl.cif?`<span>🔖 ${cl.cif}</span>`:''}
+      </div>
+      <div style="margin-bottom:8px;font-size:11px;color:var(--text2)">
+        📁 ${proyectos.length} proyecto${proyectos.length!==1?'s':''}
+      </div>
+      ${cl.contactos&&cl.contactos.length?`
+        <div style="font-size:10px;color:var(--text3);margin-bottom:6px">CONTACTOS:</div>
+        ${cl.contactos.map(c=>`<div style="font-size:11px;margin-bottom:3px">👤 ${c.nombre} ${c.cargo?'· '+c.cargo:''} ${c.email?'· '+c.email:''}</div>`).join('')}
+      `:''}
+      <div class="person-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editarCliente('${cl.id}')">✏️ Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmarEliminar('clientes','${cl.id}','el cliente')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addContacto(){
+  const div=document.createElement('div');
+  div.className='form-grid';
+  div.style='margin-bottom:10px;padding:10px;background:var(--surface2);border-radius:8px';
+  div.innerHTML=`
+    <div class="form-group"><label>Nombre</label><input type="text" class="c-contact-nombre" placeholder="Nombre contacto"></div>
+    <div class="form-group"><label>Cargo</label><input type="text" class="c-contact-cargo" placeholder="Director, Técnico..."></div>
+    <div class="form-group"><label>Email</label><input type="email" class="c-contact-email" placeholder="email@empresa.com"></div>
+    <div class="form-group"><label>Teléfono</label><input type="tel" class="c-contact-tel" placeholder="+34 600..."></div>
+    <div class="form-group full" style="align-items:flex-end">
+      <button class="btn btn-danger btn-sm" onclick="this.closest('.form-grid').remove()">Eliminar contacto</button>
+    </div>`;
+  document.getElementById('contactos-lista').appendChild(div);
+}
+
+async function guardarCliente(){
+  const nombre=document.getElementById('cl-nombre').value.trim();
+  if(!nombre){toast('Nombre empresa es obligatorio','error');return;}
+  const contactos=[];
+  document.querySelectorAll('#contactos-lista .form-grid').forEach(div=>{
+    const n=div.querySelector('.c-contact-nombre')?.value.trim();
+    if(n) contactos.push({
+      nombre:n,
+      cargo:div.querySelector('.c-contact-cargo')?.value.trim()||'',
+      email:div.querySelector('.c-contact-email')?.value.trim()||'',
+      tel:div.querySelector('.c-contact-tel')?.value.trim()||''
+    });
+  });
+  const data={
+    nombre,cif:document.getElementById('cl-cif').value.trim(),
+    sector:document.getElementById('cl-sector').value.trim(),
+    email:document.getElementById('cl-email').value.trim(),
+    tel:document.getElementById('cl-tel').value.trim(),
+    ciudad:document.getElementById('cl-ciudad').value.trim(),
+    direccion:document.getElementById('cl-direccion').value.trim(),
+    notas:document.getElementById('cl-notas').value,
+    contactos,
+    updatedAt:new Date().toISOString()
+  };
+  try {
+    if(editingId.cliente){
+      await db.collection('clientes').doc(editingId.cliente).update(data);
+      toast('Cliente actualizado ✓','success');
+    } else {
+      data.createdAt=new Date().toISOString();
+      await db.collection('clientes').add(data);
+      toast('Cliente guardado ✓','success');
+    }
+    editingId.cliente=null;
+    cerrarModal('modal-cliente');
+    await cargarTodo();
+    renderClientes();
+    actualizarSelectores();
+  } catch(e){toast('Error: '+e.message,'error');}
+}
+
+function editarCliente(id){
+  const cl=DATA.clientes.find(x=>x.id===id);
+  if(!cl) return;
+  editingId.cliente=id;
+  document.getElementById('modal-cliente-title').textContent='Editar cliente';
+  document.getElementById('cl-nombre').value=cl.nombre||'';
+  document.getElementById('cl-cif').value=cl.cif||'';
+  document.getElementById('cl-sector').value=cl.sector||'';
+  document.getElementById('cl-email').value=cl.email||'';
+  document.getElementById('cl-tel').value=cl.tel||'';
+  document.getElementById('cl-ciudad').value=cl.ciudad||'';
+  document.getElementById('cl-direccion').value=cl.direccion||'';
+  document.getElementById('cl-notas').value=cl.notas||'';
+  document.getElementById('contactos-lista').innerHTML='';
+  (cl.contactos||[]).forEach(c=>{
+    addContacto();
+    const divs=document.querySelectorAll('#contactos-lista .form-grid');
+    const last=divs[divs.length-1];
+    last.querySelector('.c-contact-nombre').value=c.nombre||'';
+    last.querySelector('.c-contact-cargo').value=c.cargo||'';
+    last.querySelector('.c-contact-email').value=c.email||'';
+    last.querySelector('.c-contact-tel').value=c.tel||'';
+  });
+  abrirModal('modal-cliente');
+}
+
+// ── TAREAS ─────────────────────────────────────────────────────────────────
+function renderTareas(){
+  const filtro=document.getElementById('tareas-filter').value;
+  const tareas=filtro?DATA.tareas.filter(t=>t.proyectoId===filtro):DATA.tareas;
+  const container=document.getElementById('tareas-container');
+  if(!tareas.length){
+    container.innerHTML=`<div class="empty"><div class="empty-icon">✅</div>Sin tareas. Añade la primera.</div>`;
+    return;
+  }
+  const hoy=new Date().toISOString().split('T')[0];
+  container.innerHTML=tareas.map(t=>{
+    const pct=parseInt(t.porcentaje||0);
+    const riesgo=t.riesgo||'🟢 Verde';
+    const actualizado=t.fechaComentario===hoy;
+    const pBarClass=riesgo.includes('Verde')?'progress-green':riesgo.includes('Amarillo')?'progress-yellow':'progress-red';
+    const pNombre=DATA.proyectos.find(p=>p.id===t.proyectoId)?.nombre||t.proyectoId||'—';
+    return `<div class="tarea-card ${t.estado==='Bloqueado'?'bloqueada':''}">
+      <div class="tarea-header">
+        <div class="tarea-title">${t.fase||'—'} — ${pNombre}</div>
+        <div class="gap-8">
+          ${riesgo.includes('Verde')?'<span class="badge badge-green">🟢</span>':riesgo.includes('Amarillo')?'<span class="badge badge-yellow">🟡</span>':'<span class="badge badge-red">🔴</span>'}
+          ${actualizado?'<span class="badge badge-green">✅ Hoy</span>':'<span class="badge badge-yellow">⚠️ Pendiente</span>'}
+          <button class="btn-icon" onclick="editarTarea('${t.id}')">✏️</button>
+          <button class="btn-icon" onclick="confirmarEliminar('tareas','${t.id}','la tarea')">🗑️</button>
+        </div>
+      </div>
+      <div class="tarea-meta">
+        <span>👤 ${t.responsableNombre||'—'}</span>
+        <span>📅 Fin: ${t.fechaFinPrevista||'—'}</span>
+        <span>${estadoBadge(t.estado)}</span>
+      </div>
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:11px;color:var(--text2)">Avance</span>
+          <span style="font-size:11px;font-weight:700">${pct}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${pBarClass}" style="width:${pct}%"></div></div>
+      </div>
+      ${t.comentario?`<div style="font-size:11px;color:var(--text2);background:var(--surface2);padding:7px 9px;border-radius:6px;margin-bottom:6px">💬 ${t.comentario}</div>`:''}
+      ${t.bloqueo?`<div style="font-size:11px;color:var(--red);background:rgba(239,68,68,.08);padding:7px 9px;border-radius:6px;border-left:3px solid var(--red)">🚨 ${t.bloqueo}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function guardarTarea(){
+  const comentario=document.getElementById('t-comentario').value.trim();
+  const proyecto=document.getElementById('t-proyecto').value;
+  const finPrev=document.getElementById('t-fin-prev').value;
+  if(!comentario){toast('Comentario diario es obligatorio','error');return;}
+  if(!proyecto){toast('Selecciona un proyecto','error');return;}
+  if(!finPrev){toast('Fecha fin prevista es obligatoria','error');return;}
+  const respId=document.getElementById('t-responsable').value;
+  const respNombre=document.getElementById('t-responsable').options[document.getElementById('t-responsable').selectedIndex]?.text||'';
+  const data={
+    proyectoId:proyecto,
+    fase:document.getElementById('t-fase').value,
+    responsableId:respId,responsableNombre:respNombre,
+    fechaInicio:document.getElementById('t-inicio').value,
+    fechaFinPrevista:finPrev,
+    fechaFinReal:document.getElementById('t-fin-real').value,
+    porcentaje:document.getElementById('t-pct').value,
+    estado:document.getElementById('t-estado').value,
+    riesgo:document.getElementById('t-riesgo').value,
+    comentario,fechaComentario:new Date().toISOString().split('T')[0],
+    bloqueo:document.getElementById('t-bloqueo').value,
+    updatedAt:new Date().toISOString()
+  };
+  try {
+    if(editingId.tarea){
+      await db.collection('tareas').doc(editingId.tarea).update(data);
+      toast('Tarea actualizada ✓','success');
+    } else {
+      data.createdAt=new Date().toISOString();
+      await db.collection('tareas').add(data);
+      toast('Tarea guardada ✓','success');
+    }
+    editingId.tarea=null;
+    cerrarModal('modal-tarea');
+    await cargarTodo();
+    renderTareas();
+  } catch(e){toast('Error: '+e.message,'error');}
+}
+
+function editarTarea(id){
+  const t=DATA.tareas.find(x=>x.id===id);
+  if(!t) return;
+  editingId.tarea=id;
+  poblarSelectProyectos('t-proyecto');
+  poblarSelectEmpleados('t-responsable');
+  document.getElementById('t-proyecto').value=t.proyectoId||'';
+  document.getElementById('t-fase').value=t.fase||'Ingeniería';
+  document.getElementById('t-responsable').value=t.responsableId||'';
+  document.getElementById('t-inicio').value=t.fechaInicio||'';
+  document.getElementById('t-fin-prev').value=t.fechaFinPrevista||'';
+  document.getElementById('t-fin-real').value=t.fechaFinReal||'';
+  document.getElementById('t-pct').value=t.porcentaje||0;
+  document.getElementById('t-estado').value=t.estado||'Pendiente';
+  document.getElementById('t-riesgo').value=t.riesgo||'🟢 Verde';
+  document.getElementById('t-comentario').value=t.comentario||'';
+  document.getElementById('t-bloqueo').value=t.bloqueo||'';
+  abrirModal('modal-tarea');
+}
+
+// ── GANTT ──────────────────────────────────────────────────────────────────
+function renderGantt(){
+  const container=document.getElementById('gantt-container');
+  const filtro=document.getElementById('gantt-filter').value;
+  const proyectos=filtro?DATA.proyectos.filter(p=>p.id===filtro):DATA.proyectos;
+  if(!proyectos.length){
+    container.innerHTML=`<div class="empty"><div class="empty-icon">📅</div>Sin proyectos</div>`;
+    return;
+  }
+  const hoy=new Date();
+  let minF=new Date(hoy);minF.setDate(hoy.getDate()-20);
+  let maxF=new Date(hoy);maxF.setDate(hoy.getDate()-70);
+  proyectos.forEach(p=>{
+    const ini=new Date(p.fechaInicio||hoy);
+    const fin=new Date(p.fechaCompromiso||maxF);
+    if(ini<minF)minF=ini; if(fin>maxF)maxF=fin;
+  });
+  maxF.setDate(maxF.getDate()+14);
+  const totalDias=Math.round((maxF-minF)/86400000);
+  const LABEL_W=200;
+  const DAY_W=Math.max(16,Math.min(28,(window.innerWidth-LABEL_W-48)/totalDias));
+  const FASES=[
+    {key:'Ingeniería',cls:'gantt-bar-ing',off:.0,dur:.25},
+    {key:'Compras',cls:'gantt-bar-com',off:.1,dur:.2},
+    {key:'Almacén',cls:'gantt-bar-alm',off:.25,dur:.15},
+    {key:'Diseño',cls:'gantt-bar-dis',off:.2,dur:.2},
+    {key:'Montaje',cls:'gantt-bar-mon',off:.4,dur:.35},
+    {key:'Validación',cls:'gantt-bar-val',off:.72,dur:.18}
+  ];
+  const meses=[];let cur=new Date(minF);
+  while(cur<=maxF){
+    const diasMes=Math.min(new Date(cur.getFullYear(),cur.getMonth()+1,0).getDate()-cur.getDate()+1,totalDias);
+    meses.push({label:cur.toLocaleDateString('es-ES',{month:'short',year:'2-digit'}),dias:diasMes});
+    cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);
+  }
+  const cols=`${LABEL_W}px ${meses.map(m=>`${m.dias*DAY_W}px`).join(' ')}`;
+  const todayOff=Math.round((hoy-minF)/86400000);
+  let html=`<div class="gantt-container">
+    <div class="gantt-header-row" style="grid-template-columns:${cols}">
+      <div style="padding:8px 14px;font-size:10px;font-weight:700;color:var(--text3)">PROYECTO</div>
+      ${meses.map(m=>`<div class="gantt-month-label" style="padding:8px 0">${m.label}</div>`).join('')}
+    </div>`;
+  proyectos.forEach(p=>{
+    const pId=p.id;
+    const ini=new Date(p.fechaInicio||hoy);
+    const fin=new Date(p.fechaCompromiso||maxF);
+    const durTotal=Math.max(1,Math.round((fin-ini)/86400000));
+    const sem=semaforo(p);
+    const dot=sem==='green'?'🟢':sem==='yellow'?'🟡':'🔴';
+    html+=`<div class="gantt-row" style="grid-template-columns:${cols};background:var(--surface2)">
+      <div class="gantt-label"><div>${dot} <strong>${p.nombre||'—'}</strong></div>
+        <div class="gantt-label-sub">${DATA.clientes.find(c=>c.id===p.clienteId)?.nombre||p.clienteNombre||''}</div></div>
+      <div style="grid-column:2/-1;position:relative;height:46px">
+        <div class="gantt-today" style="left:${todayOff*DAY_W}px"></div>
+      </div></div>`;
+    const tareasP=DATA.tareas.filter(t=>t.proyectoId===pId);
+    FASES.forEach(fase=>{
+      const tF=tareasP.find(t=>t.fase===fase.key);
+      const pct=tF?parseInt(tF.porcentaje||0):0;
+      const fIni=new Date(ini);fIni.setDate(ini.getDate()+Math.round(durTotal*fase.off));
+      const fDur=Math.max(5,Math.round(durTotal*fase.dur));
+      const barL=Math.round((fIni-minF)/86400000)*DAY_W;
+      const barW=fDur*DAY_W;
+      const riesgo=tF?(tF.riesgo||'🟢 Verde'):'🟢 Verde';
+      const op=tF?1:.35;
+      html+=`<div class="gantt-row" style="grid-template-columns:${cols}">
+        <div class="gantt-label" style="padding-left:28px">
+          <div style="font-size:10px;color:var(--text2)">${fase.key}</div>
+          <div style="font-size:9px;color:var(--text3)">${pct}% · ${riesgo}</div>
+        </div>
+        <div style="grid-column:2/-1;position:relative;height:46px">
+          <div class="gantt-today" style="left:${todayOff*DAY_W}px"></div>
+          <div class="gantt-bar ${fase.cls}" style="left:${barL}px;width:${barW}px;opacity:${op}" title="${fase.key}: ${pct}%">${pct}%</div>
+        </div></div>`;
+    });
+  });
+  html+=`</div>`;
+  container.innerHTML=html;
+}
+
+// ── FINANCIERO ─────────────────────────────────────────────────────────────
+function renderFinanciero(){
+  const container=document.getElementById('financiero-container');
+  if(!DATA.proyectos.length){
+    container.innerHTML=`<div class="empty"><div class="empty-icon">💶</div>Sin proyectos</div>`;
+    return;
+  }
+  container.innerHTML=DATA.proyectos.map(p=>{
+    const hitosP=DATA.hitos.filter(h=>h.proyectoId===p.id);
+    const cobrado=hitosP.filter(h=>h.cobrado==='Sí').reduce((s,h)=>s+parseFloat(h.importe||0),0);
+    const pendiente=hitosP.filter(h=>h.cobrado==='No').reduce((s,h)=>s+parseFloat(h.importe||0),0);
+    const valor=parseFloat(p.valor||0);
+    return `<div class="fin-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-size:14px;font-weight:700">${p.nombre||'—'}</div>
+          <div style="font-size:11px;color:var(--text2)">${DATA.clientes.find(c=>c.id===p.clienteId)?.nombre||p.clienteNombre||'—'}</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('h-proyecto').value='${p.id}';abrirModal('modal-hito')">+ Hito</button>
+      </div>
+      <div class="fin-grid">
+        <div class="fin-item"><label>Valor contrato</label><div class="value" style="color:var(--accent)">${valor.toLocaleString('es-ES')}€</div></div>
+        <div class="fin-item"><label>Cobrado</label><div class="value" style="color:var(--green)">${cobrado.toLocaleString('es-ES')}€</div></div>
+        <div class="fin-item"><label>Pendiente</label><div class="value" style="color:${pendiente>0?'var(--yellow)':'var(--green)'}">${pendiente.toLocaleString('es-ES')}€</div></div>
+      </div>
+      ${hitosP.length?hitosP.map(h=>`
+        <div class="hito-row">
+          <span>${h.cobrado==='Sí'?'✅':'⏳'}</span>
+          <span class="hito-nombre">${h.nombre||'—'}</span>
+          <span class="hito-importe">${parseFloat(h.importe||0).toLocaleString('es-ES')}€</span>
+          <span style="color:var(--text3)">${h.fechaPrevista||'—'}</span>
+          <span class="badge ${h.cobrado==='Sí'?'badge-green':'badge-grey'}">${h.cobrado}</span>
+          <button class="btn-icon" onclick="confirmarEliminar('hitos','${h.id}','el hito')">🗑️</button>
+        </div>`).join(''):`<div style="font-size:11px;color:var(--text3)">Sin hitos registrados</div>`}
+    </div>`;
+  }).join('');
+}
+
+async function guardarHito(){
+  const nombre=document.getElementById('h-nombre').value.trim();
+  const importe=document.getElementById('h-importe').value;
+  const fechaPrev=document.getElementById('h-fecha-prev').value;
+  const proyecto=document.getElementById('h-proyecto').value;
+  if(!nombre||!importe||!fechaPrev){toast('Nombre, importe y fecha son obligatorios','error');return;}
+  const data={
+    proyectoId:proyecto,nombre,importe,
+    fechaPrevista:fechaPrev,
+    fechaReal:document.getElementById('h-fecha-real').value,
+    cobrado:document.getElementById('h-cobrado').value,
+    condicion:document.getElementById('h-condicion').value,
+    createdAt:new Date().toISOString()
+  };
+  try {
+    await db.collection('hitos').add(data);
+    toast('Hito guardado ✓','success');
+    cerrarModal('modal-hito');
+    await cargarTodo();
+    renderFinanciero();
+  } catch(e){toast('Error: '+e.message,'error');}
+}
+
+// ── COMUNICACIONES ─────────────────────────────────────────────────────────
+function renderComunicaciones(){
+  const container=document.getElementById('comunicaciones-container');
+  if(!DATA.comunicaciones.length){
+    container.innerHTML=`<div class="empty"><div class="empty-icon">✉️</div>Sin comunicaciones</div>`;
+    return;
+  }
+  const tipoColor={Email_Cliente:'badge-blue',Email_Equipo:'badge-green',Nota_Interna:'badge-grey',Llamada:'badge-orange'};
+  container.innerHTML=[...DATA.comunicaciones].reverse().map(c=>{
+    const tipo=c.tipo||'—';
+    const pNombre=DATA.proyectos.find(p=>p.id===c.proyectoId)?.nombre||c.proyectoId||'—';
+    return `<div class="com-item">
+      <div class="com-header">
+        <div class="gap-8">
+          <span class="badge ${tipoColor[tipo]||'badge-grey'}">${tipo.replace('_',' ')}</span>
+          <span style="font-size:11px;color:var(--text2)">${pNombre}</span>
+        </div>
+        <div class="gap-8">
+          <span style="font-size:10px;color:var(--text3)">${c.fecha||'—'}</span>
+          <button class="btn-icon" onclick="confirmarEliminar('comunicaciones','${c.id}','la comunicación')">🗑️</button>
+        </div>
+      </div>
+      <div style="font-size:12px;font-weight:600;margin-bottom:3px">${c.asunto||'—'}</div>
+      <div style="font-size:11px;color:var(--text2)">${c.contenido||'—'}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">→ ${c.destinatario||'—'}</div>
+    </div>`;
+  }).join('');
+}
+
+async function guardarComunicacion(){
+  const dest=document.getElementById('c-destinatario').value.trim();
+  const asunto=document.getElementById('c-asunto').value.trim();
+  const contenido=document.getElementById('c-contenido').value.trim();
+  if(!dest||!asunto||!contenido){toast('Destinatario, asunto y contenido son obligatorios','error');return;}
+  const data={
+    proyectoId:document.getElementById('c-proyecto').value,
+    fecha:new Date().toISOString().split('T')[0],
+    tipo:document.getElementById('c-tipo').value,
+    destinatario:dest,asunto,contenido,
+    createdAt:new Date().toISOString()
+  };
+  try {
+    await db.collection('comunicaciones').add(data);
+    toast('Comunicación guardada ✓','success');
+    cerrarModal('modal-comunicacion');
+    await cargarTodo();
+    renderComunicaciones();
+  } catch(e){toast('Error: '+e.message,'error');}
+}
+
+// ── ALERTAS ────────────────────────────────────────────────────────────────
+function renderAlertas(){
+  const container=document.getElementById('alertas-container');
+  const alertas=generarAlertas();
+  container.innerHTML=alertas.length?alertas.map(a=>`
+    <div class="alert-item ${a.clase}">
+      <div class="alert-icon">${a.icono}</div>
+      <div class="alert-content">
+        <div class="alert-title">${a.titulo}</div>
+        <div class="alert-desc">${a.desc}</div>
+        <div class="alert-time">${a.tiempo}</div>
+      </div>
+    </div>`).join(''):`<div class="empty"><div class="empty-icon">✅</div>Sin alertas activas. Todo en orden.</div>`;
+}
+
+// ── SELECTORES ────────────────────────────────────────────────────────────
+function actualizarSelectores(){
+  poblarSelectProyectos('gantt-filter',true);
+  poblarSelectProyectos('tareas-filter',true);
+  poblarSelectProyectoForm();
+}
+
+function poblarSelectProyectos(id,conTodos=false){
+  const sel=document.getElementById(id);
+  if(!sel) return;
+  const opts=DATA.proyectos.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+  sel.innerHTML=(conTodos?'<option value="">Todos los proyectos</option>':'')+opts;
+}
+
+function poblarSelectEmpleados(id){
+  const sel=document.getElementById(id);
+  if(!sel) return;
+  sel.innerHTML='<option value="">Sin asignar</option>'+
+    DATA.empleados.map(e=>`<option value="${e.id}">${e.nombre} ${e.apellidos||''} (${e.rol})</option>`).join('');
+}
+
+function poblarSelectProyectoForm(){
+  poblarSelectProyectos('p-cliente-sel');
+  // Sobreescribir con clientes
+  const sel=document.getElementById('p-cliente-sel');
+  if(sel) sel.innerHTML='<option value="">Sin cliente</option>'+DATA.clientes.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
+
+  ['p-resp-ing','p-resp-com','p-resp-alm','p-resp-mon','p-resp-dis'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(sel) sel.innerHTML='<option value="">Sin asignar</option>'+DATA.empleados.map(e=>`<option value="${e.id}">${e.nombre} ${e.apellidos||''}</option>`).join('');
+  });
+}
+
+// ── ELIMINAR ──────────────────────────────────────────────────────────────
+async function confirmarEliminar(coleccion,id,nombre){
+  if(!confirm(`¿Eliminar ${nombre}? Esta acción no se puede deshacer.`)) return;
+  try {
+    await db.collection(coleccion).doc(id).delete();
+    toast(`Eliminado correctamente`,'success');
+    await cargarTodo();
+    const renders={proyectos:renderProyectos,empleados:()=>renderEquipo(''),
+      clientes:renderClientes,tareas:renderTareas,
+      hitos:renderFinanciero,comunicaciones:renderComunicaciones};
+    if(renders[coleccion]) renders[coleccion]();
+  } catch(e){toast('Error al eliminar: '+e.message,'error');}
+}
+
+// ── MODAL / FORM UTILS ────────────────────────────────────────────────────
+function abrirModal(id){
+  document.getElementById(id).classList.add('open');
+  if(id==='modal-proyecto') poblarSelectProyectoForm();
+  if(id==='modal-tarea'){poblarSelectProyectos('t-proyecto');poblarSelectEmpleados('t-responsable');}
+  if(id==='modal-hito') poblarSelectProyectos('h-proyecto');
+  if(id==='modal-comunicacion') poblarSelectProyectos('c-proyecto');
+}
+function cerrarModal(id){
+  document.getElementById(id).classList.remove('open');
+  editingId={};
+}
+function limpiarForm(id){
+  document.getElementById(id).querySelectorAll('input,textarea,select').forEach(el=>{
+    if(el.tagName==='SELECT') el.selectedIndex=0;
+    else el.value='';
+  });
+  if(id==='form-cliente') document.getElementById('contactos-lista').innerHTML='';
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
 });
 
-// Render páginas al activar nav
-document.querySelector('[data-page="proyectos"]').addEventListener("click", renderProyectos);
-
-// ── INIT ───────────────────────────────────────────────────────────────────────
-window.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("dashboard-fecha").textContent =
-    "Hoy — " + new Date().toLocaleDateString("es-ES", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
-  initMSAL();
-});
+// ── SYNC / TOAST / UI ─────────────────────────────────────────────────────
+function setSyncStatus(ok,label){
+  document.getElementById('sync-dot').style.background=ok?'var(--green)':'var(--yellow)';
+  document.getElementById('sync-label').textContent=label;
+}
+function toast(msg,tipo='info'){
+  const c=document.getElementById('toast-container');
+  const el=document.createElement('div');
+  el.className=`toast toast-${tipo}`;
+  const icons={success:'✅',error:'❌',info:'ℹ️'};
+  el.innerHTML=`<span>${icons[tipo]||'ℹ️'}</span><span>${msg}</span>`;
+  c.appendChild(el);
+  setTimeout(()=>el.remove(),4000);
+}
 </script>
 </body>
 </html>
