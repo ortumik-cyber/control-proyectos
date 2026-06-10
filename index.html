@@ -1336,48 +1336,6 @@ function renderTareas(){
   </div>`;
 }
 
-  const filtro=document.getElementById('tareas-filter').value;
-  const tareas=filtro?DATA.tareas.filter(t=>t.proyectoId===filtro):DATA.tareas;
-  const container=document.getElementById('tareas-container');
-  if(!tareas.length){
-    container.innerHTML=`<div class="empty"><div class="empty-icon">✅</div>Sin tareas. Añade la primera.</div>`;
-    return;
-  }
-  const hoy=new Date().toISOString().split('T')[0];
-  container.innerHTML=tareas.map(t=>{
-    const pct=parseInt(t.porcentaje||0);
-    const riesgo=t.riesgo||'🟢 Verde';
-    const actualizado=t.fechaComentario===hoy;
-    const pBarClass=riesgo.includes('Verde')?'progress-green':riesgo.includes('Amarillo')?'progress-yellow':'progress-red';
-    const pNombre=DATA.proyectos.find(p=>p.id===t.proyectoId)?.nombre||t.proyectoId||'—';
-    return `<div class="tarea-card ${t.estado==='Bloqueado'?'bloqueada':''}">
-      <div class="tarea-header">
-        <div class="tarea-title">${t.fase||'—'} — ${pNombre}</div>
-        <div class="gap-8">
-          ${riesgo.includes('Verde')?'<span class="badge badge-green">🟢</span>':riesgo.includes('Amarillo')?'<span class="badge badge-yellow">🟡</span>':'<span class="badge badge-red">🔴</span>'}
-          ${actualizado?'<span class="badge badge-green">✅ Hoy</span>':'<span class="badge badge-yellow">⚠️ Pendiente</span>'}
-          <button class="btn-icon" onclick="editarTarea('${t.id}')">✏️</button>
-          <button class="btn-icon" onclick="confirmarEliminar('tareas','${t.id}','la tarea')">🗑️</button>
-        </div>
-      </div>
-      <div class="tarea-meta">
-        <span>👤 ${t.responsableNombre||'—'}</span>
-        <span>📅 Fin: ${t.fechaFinPrevista||'—'}</span>
-        <span>${estadoBadge(t.estado)}</span>
-      </div>
-      <div style="margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-          <span style="font-size:11px;color:var(--text2)">Avance</span>
-          <span style="font-size:11px;font-weight:700">${pct}%</span>
-        </div>
-        <div class="progress-bar"><div class="progress-fill ${pBarClass}" style="width:${pct}%"></div></div>
-      </div>
-      ${t.comentario?`<div style="font-size:11px;color:var(--text2);background:var(--surface2);padding:7px 9px;border-radius:6px;margin-bottom:6px">💬 ${t.comentario}</div>`:''}
-      ${t.bloqueo?`<div style="font-size:11px;color:var(--red);background:rgba(239,68,68,.08);padding:7px 9px;border-radius:6px;border-left:3px solid var(--red)">🚨 ${t.bloqueo}</div>`:''}
-    </div>`;
-  }).join('');
-}
-
 function actualizarInfoProyecto(){
   const pid=document.getElementById('t-proyecto').value;
   const p=DATA.proyectos.find(x=>x.id===pid);
