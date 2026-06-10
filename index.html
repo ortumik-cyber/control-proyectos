@@ -1748,7 +1748,7 @@ function poblarSelectProyectoForm(){
 }
 
 // ── ELIMINAR ──────────────────────────────────────────────────────────────
-async async function confirmarEliminar(coleccion,id,nombre){
+async function confirmarEliminar(coleccion,id,nombre){
   if(!confirm(`¿Eliminar ${nombre}? Esta acción no se puede deshacer.`)) return;
   try {
     await db.collection(coleccion).doc(id).delete();
