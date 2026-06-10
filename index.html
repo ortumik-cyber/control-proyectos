@@ -268,7 +268,7 @@ select option{background:var(--surface2)}
 .gantt-row-proj{background:linear-gradient(90deg,var(--surface2),var(--surface));border-bottom:2px solid var(--border)}
 .gantt-row-fase{border-bottom:1px solid var(--border)}
 .gantt-row-fase:hover{background:rgba(59,130,246,.04)}
-.gantt-label-cell{padding:0 14px;border-right:1px solid var(--border);background:var(--surface)}
+.gantt-label-cell{padding:0 14px;border-right:1px solid var(--border);background:var(--surface);position:sticky;left:0;z-index:5}
 .gantt-bar-new{height:18px;border-radius:4px;position:absolute;top:11px;
   display:flex;align-items:center;padding:0 8px;font-size:9px;font-weight:700;color:#fff;
   white-space:nowrap;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.3);cursor:pointer}
@@ -364,10 +364,9 @@ select option{background:var(--surface2)}
     <button class="nav-btn" onclick="navTo('tareas')" data-page="tareas">✅ Tareas</button>
     <button class="nav-btn" onclick="navTo('equipo')" data-page="equipo">👥 Equipo</button>
     <button class="nav-btn" onclick="navTo('clientes')" data-page="clientes">🏢 Clientes</button>
-    <button class="nav-btn" onclick="navTo('financiero')" data-page="financiero">💶 Financiero</button>
+    <button class="nav-btn" id="nav-financiero" onclick="navTo('financiero')" data-page="financiero">💶 Financiero</button>
     <button class="nav-btn" onclick="navTo('comunicaciones')" data-page="comunicaciones">✉️ Comunicaciones</button>
     <button class="nav-btn" onclick="navTo('alertas')" data-page="alertas">🔔 Alertas</button>
-    <button class="nav-btn" id="nav-config" onclick="navTo('config')" data-page="config">⚙️ Config</button>
     <button class="nav-btn" id="nav-config" onclick="navTo('config')" data-page="config">⚙️ Config</button>
   </nav>
 
@@ -825,7 +824,7 @@ function rolBadge(rol){
 window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('dashboard-fecha').textContent =
     'Hoy — ' + new Date().toLocaleDateString('es-ES',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  await cargarTodo();
+  await cargarTodo2();
 });
 
 async function cargarTodo(){
@@ -1034,7 +1033,7 @@ async function guardarProyecto(){
     }
     editingId.proyecto=null;
     cerrarModal('modal-proyecto');
-    await cargarTodo();
+    await cargarTodo2();
   } catch(e){toast('Error: '+e.message,'error');}
 }
 
@@ -1125,7 +1124,7 @@ async function guardarEmpleado(){
     }
     editingId.empleado=null;
     cerrarModal('modal-empleado');
-    await cargarTodo();
+    await cargarTodo2();
     renderEquipo('');
     actualizarSelectores();
   } catch(e){toast('Error: '+e.message,'error');}
@@ -1236,7 +1235,7 @@ async function guardarCliente(){
     }
     editingId.cliente=null;
     cerrarModal('modal-cliente');
-    await cargarTodo();
+    await cargarTodo2();
     renderClientes();
     actualizarSelectores();
   } catch(e){toast('Error: '+e.message,'error');}
@@ -1379,7 +1378,7 @@ async function guardarTarea(){
     }
     editingId.tarea=null;
     cerrarModal('modal-tarea');
-    await cargarTodo();
+    await cargarTodo2();
     renderTareas();
   } catch(e){toast('Error: '+e.message,'error');}
 }
@@ -1464,7 +1463,7 @@ function renderGantt(){
       <colgroup><col style="width:${LW}px;min-width:${LW}px"></colgroup>
       <!-- HEADER MESES -->
       <tr style="background:var(--surface2)">
-        <th style="background:var(--surface2);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 12px;font-size:10px;color:var(--text3);text-align:left">PROYECTO / FASE</th>
+        <th style="background:var(--surface2);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 12px;font-size:10px;color:var(--text3);text-align:left;position:sticky;left:0;z-index:10">PROYECTO / FASE</th>
         <th style="padding:0;border-bottom:1px solid var(--border)">
           <div style="display:flex">
             ${meses.map(m=>`<div class="gantt-month-span" style="width:${m.px}px;min-width:${m.px}px">${m.label}</div>`).join('')}
@@ -1619,7 +1618,7 @@ async function guardarHito(){
     await db.collection('hitos').add(data);
     toast('Hito guardado ✓','success');
     cerrarModal('modal-hito');
-    await cargarTodo();
+    await cargarTodo2();
     renderFinanciero();
   } catch(e){toast('Error: '+e.message,'error');}
 }
@@ -1749,12 +1748,12 @@ function poblarSelectProyectoForm(){
 }
 
 // ── ELIMINAR ──────────────────────────────────────────────────────────────
-async function confirmarEliminar(coleccion,id,nombre){
+async async function confirmarEliminar(coleccion,id,nombre){
   if(!confirm(`¿Eliminar ${nombre}? Esta acción no se puede deshacer.`)) return;
   try {
     await db.collection(coleccion).doc(id).delete();
-    toast(`Eliminado correctamente`,'success');
-    await cargarTodo();
+    toast('Eliminado ✓','success');
+    await cargarTodo2();
     const renders={proyectos:renderProyectos,empleados:()=>renderEquipo(''),
       clientes:renderClientes,tareas:renderTareas,
       hitos:renderFinanciero,comunicaciones:renderComunicaciones};
@@ -1863,7 +1862,7 @@ async function guardarUsuario(){
       toast('✅ Usuario "'+username+'" creado. Pass temporal: '+password,'success');
     }
     editingId={};cerrarModal('modal-usuario');
-    await sincronizarTodo();renderUsuarios();
+    await cargarTodo2();renderUsuarios();
   }catch(e){toast('Error: '+e.message,'error');}
 }
 
@@ -1887,7 +1886,7 @@ async function resetPass(id){
   if(!nueva||nueva.trim().length<4){toast('Mínimo 4 caracteres','error');return;}
   await db.collection('usuarios').doc(id).update({password:nueva.trim(),mustChangePassword:true});
   toast('Contraseña reseteada. El usuario la cambiará al entrar.','success');
-  await sincronizarTodo();renderUsuarios();
+  await cargarTodo2();renderUsuarios();
 }
 
 async function confirmarEliminar(col,id,nombre){
@@ -1895,7 +1894,7 @@ async function confirmarEliminar(col,id,nombre){
   try{
     await db.collection(col).doc(id).delete();
     toast('Eliminado ✓','success');
-    await sincronizarTodo();
+    await cargarTodo2();
     renderUsuarios();
   }catch(e){toast('Error: '+e.message,'error');}
 }
