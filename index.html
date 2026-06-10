@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ControlPro — Gestión de Proyectos</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
@@ -258,6 +259,39 @@ select option{background:var(--surface2)}
 .text-muted{color:var(--text3);font-size:11px}
 .fw-bold{font-weight:700}
 .gap-8{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ── GANTT MEJORADO ── */
+.gantt-wrap-outer{overflow-x:auto;overflow-y:visible;border-radius:var(--radius);border:1px solid var(--border);cursor:grab;user-select:none}
+.gantt-wrap-outer:active{cursor:grabbing}
+.gantt-week-header{font-size:9px;color:var(--text3);text-align:center;padding:5px 2px;border-right:1px solid var(--border)}
+.gantt-month-span{font-size:10px;font-weight:700;color:var(--text2);text-align:center;padding:5px 0;background:var(--surface2);border-right:1px solid var(--border)}
+.gantt-row-proj{background:linear-gradient(90deg,var(--surface2),var(--surface));border-bottom:2px solid var(--border)}
+.gantt-row-fase{border-bottom:1px solid var(--border)}
+.gantt-row-fase:hover{background:rgba(59,130,246,.04)}
+.gantt-label-cell{padding:0 14px;border-right:1px solid var(--border);background:var(--surface)}
+.gantt-bar-new{height:18px;border-radius:4px;position:absolute;top:11px;
+  display:flex;align-items:center;padding:0 8px;font-size:9px;font-weight:700;color:#fff;
+  white-space:nowrap;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.3);cursor:pointer}
+.gantt-progress{position:absolute;left:0;top:0;height:100%;border-radius:4px 0 0 4px;background:rgba(255,255,255,.25)}
+.gantt-today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--red);opacity:.8;z-index:20;pointer-events:none}
+.gantt-today-label{position:absolute;top:-18px;font-size:8px;color:var(--red);font-weight:700;transform:translateX(-50%)}
+
+/* ── KANBAN ── */
+.kanban-board{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
+.kanban-col{background:var(--surface2);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.kanban-col-header{padding:12px 14px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.kanban-col-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:120px}
+.kanban-card{background:var(--surface);border-radius:9px;padding:12px;border:1px solid var(--border);transition:border-color .2s;cursor:pointer}
+.kanban-card:hover{border-color:var(--accent)}
+.kanban-card.bloqueada{border-left:3px solid var(--red)}
+.kanban-card-title{font-size:12px;font-weight:700;margin-bottom:6px}
+.kanban-card-proj{font-size:10px;color:var(--accent);margin-bottom:5px;font-weight:600}
+.kanban-card-meta{font-size:10px;color:var(--text3);display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.kanban-card-prog{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:7px}
+.kanban-card-prog-fill{height:100%;border-radius:2px}
+.kanban-card-footer{display:flex;align-items:center;justify-content:space-between}
+@media(max-width:900px){.kanban-board{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.kanban-board{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -661,9 +695,15 @@ select option{background:var(--surface2)}
         <div class="form-group full"><label>Contenido *</label><textarea id="c-contenido" style="min-height:100px" placeholder="Escribe el mensaje..."></textarea></div>
       </div>
     </div>
+    <div style="padding:0 20px 14px;background:rgba(59,130,246,.06);border-top:1px solid var(--border)">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 0">
+        <input type="checkbox" id="c-enviar-ahora" checked style="width:16px;height:16px;cursor:pointer">
+        <span style="font-size:12px;color:var(--text)">📧 Enviar email ahora via Outlook</span>
+      </label>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="cerrarModal('modal-comunicacion')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarComunicacion()">💾 Guardar</button>
+      <button class="btn btn-primary" onclick="guardarComunicacion()">💾 Guardar y enviar</button>
     </div>
   </div>
 </div>
@@ -747,6 +787,23 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+
+// ── EMAILJS ────────────────────────────────────────────────────────────────
+const EMAILJS_SERVICE  = 'service_wvtegyy';
+const EMAILJS_TEMPLATE = 'template_r1g8t2t';
+const EMAILJS_KEY      = 'bItLrWYKOZKhu0X1d';
+async function enviarEmail(toEmail,subject,message,replyTo){
+  try{
+    emailjs.init(EMAILJS_KEY);
+    await emailjs.send(EMAILJS_SERVICE,EMAILJS_TEMPLATE,{
+      to_email:toEmail,subject:subject,message:message,
+      reply_to:replyTo||'noreply@controlpro.es'
+    });
+    return true;
+  }catch(e){console.error('EmailJS:',e);return false;}
+}
+
+
 
 // ── DATA CACHE ─────────────────────────────────────────────────────────────
 let DATA = { proyectos:[], tareas:[], empleados:[], clientes:[], hitos:[], comunicaciones:[] };
@@ -1214,6 +1271,72 @@ function editarCliente(id){
 // ── TAREAS ─────────────────────────────────────────────────────────────────
 function renderTareas(){
   const filtro=document.getElementById('tareas-filter').value;
+  const hoy=new Date().toISOString().split('T')[0];
+  let tareas=filtro?DATA.tareas.filter(t=>t.proyectoId===filtro):DATA.tareas;
+  if(!esGerente())tareas=tareas.filter(t=>t.responsableId===currentUser?.id);
+  const container=document.getElementById('tareas-container');
+
+  if(!tareas.length){
+    container.innerHTML=`<div class="empty"><div class="empty-icon">✅</div>Sin tareas${esGerente()?'':" asignadas a ti"}.</div>`;
+    return;
+  }
+
+  const COLS=[
+    {id:'Pendiente',   label:'⏳ Pendiente',  color:'var(--text3)',   bg:'rgba(148,163,184,.08)'},
+    {id:'En curso',    label:'▶️ En curso',   color:'var(--accent)',  bg:'rgba(59,130,246,.08)'},
+    {id:'Bloqueado',   label:'🚨 Bloqueado',  color:'var(--red)',     bg:'rgba(239,68,68,.08)'},
+    {id:'Completado',  label:'✅ Completado', color:'var(--green)',   bg:'rgba(34,197,94,.08)'},
+  ];
+
+  const tareasHtml=(col)=>{
+    const lista=tareas.filter(t=>(t.estado||'Pendiente')===col.id);
+    if(!lista.length) return '<div style="font-size:11px;color:var(--text3);text-align:center;padding:16px">Sin tareas</div>';
+    return lista.map(t=>{
+      const pct=parseInt(t.porcentaje||0);
+      const riesgo=t.riesgo||'🟢 Verde';
+      const pN=DATA.proyectos.find(p=>p.id===t.proyectoId)?.nombre||'—';
+      const pFecha=DATA.proyectos.find(p=>p.id===t.proyectoId)?.fechaCompromiso||'—';
+      const actualizado=t.fechaComentario===hoy;
+      const pBC=riesgo.includes('Verde')?'var(--green)':riesgo.includes('Amarillo')?'var(--yellow)':'var(--red)';
+      const canEdit=esGerente()||t.responsableId===currentUser?.id;
+      return `<div class="kanban-card ${t.estado==='Bloqueado'?'bloqueada':''}" onclick="${canEdit?`editarTarea('${t.id}')`:``}">
+        <div class="kanban-card-proj">${pN}</div>
+        <div class="kanban-card-title">${t.fase||'—'}</div>
+        <div class="kanban-card-meta">
+          <span>👤 ${t.responsableNombre||'—'}</span>
+          <span>📅 Proyecto: <strong style="color:var(--yellow)">${pFecha}</strong></span>
+          <span>📌 Mi tarea: <strong style="color:var(--accent)">${t.fechaFinPrevista||'—'}</strong></span>
+        </div>
+        <div class="kanban-card-prog">
+          <div class="kanban-card-prog-fill" style="width:${pct}%;background:${pBC}"></div>
+        </div>
+        <div class="kanban-card-footer">
+          <span style="font-size:11px;font-weight:800;color:${pBC}">${pct}%</span>
+          <div style="display:flex;gap:4px;align-items:center">
+            ${actualizado?'<span class="badge badge-green" style="font-size:9px">✅ Hoy</span>':'<span class="badge badge-yellow" style="font-size:9px">⚠️</span>'}
+            ${t.bloqueo?`<span class="badge badge-red" style="font-size:9px">🚨 Bloq.</span>`:''}
+          </div>
+        </div>
+        ${t.comentario?`<div style="font-size:10px;color:var(--text2);margin-top:7px;padding:5px 7px;background:var(--surface2);border-radius:5px">💬 ${t.comentario.substring(0,80)}${t.comentario.length>80?'...':''}</div>`:''}
+      </div>`;
+    }).join('');
+  };
+
+  container.innerHTML=`<div class="kanban-board">
+    ${COLS.map(col=>`
+      <div class="kanban-col">
+        <div class="kanban-col-header" style="background:${col.bg};color:${col.color}">
+          <span>${col.label}</span>
+          <span style="background:var(--border);border-radius:10px;padding:1px 8px;font-size:10px;color:var(--text2)">
+            ${tareas.filter(t=>(t.estado||'Pendiente')===col.id).length}
+          </span>
+        </div>
+        <div class="kanban-col-body">${tareasHtml(col)}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+  const filtro=document.getElementById('tareas-filter').value;
   const tareas=filtro?DATA.tareas.filter(t=>t.proyectoId===filtro):DATA.tareas;
   const container=document.getElementById('tareas-container');
   if(!tareas.length){
@@ -1328,6 +1451,164 @@ function renderGantt(){
   const container=document.getElementById('gantt-container');
   const filtro=document.getElementById('gantt-filter').value;
   const proyectos=filtro?DATA.proyectos.filter(p=>p.id===filtro):DATA.proyectos;
+  if(!proyectos.length){container.innerHTML=`<div class="empty"><div class="empty-icon">📅</div>Sin proyectos</div>`;return;}
+
+  const hoy=new Date();
+  let minF=new Date(hoy);minF.setDate(hoy.getDate()-14);
+  let maxF=new Date(hoy);maxF.setDate(hoy.getDate()+90);
+  proyectos.forEach(p=>{
+    if(p.fechaInicio){const f=new Date(p.fechaInicio);if(f<minF)minF=f;}
+    if(p.fechaCompromiso){const f=new Date(p.fechaCompromiso);f.setDate(f.getDate()+14);if(f>maxF)maxF=f;}
+  });
+
+  // Snap a lunes
+  const dayOfWeek=minF.getDay();
+  minF.setDate(minF.getDate()-(dayOfWeek===0?6:dayOfWeek-1));
+
+  const totalDias=Math.round((maxF-minF)/86400000);
+  const LW=200;const DW=28; // pixels por día fijo → scroll libre
+  const totalW=totalDias*DW;
+
+  // Calcular semanas y meses
+  const semanas=[];
+  let cur=new Date(minF);
+  while(cur<maxF){
+    const lunesStr=cur.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'});
+    semanas.push({fecha:new Date(cur),label:lunesStr});
+    cur.setDate(cur.getDate()+7);
+  }
+
+  // Calcular meses para header superior
+  const meses=[];
+  let curM=new Date(minF.getFullYear(),minF.getMonth(),1);
+  while(curM<maxF){
+    const fin=new Date(curM.getFullYear(),curM.getMonth()+1,0);
+    const inicio=curM<minF?minF:curM;
+    const finM=fin>maxF?maxF:fin;
+    const dias=Math.round((finM-inicio)/86400000)+1;
+    meses.push({label:curM.toLocaleDateString('es-ES',{month:'long',year:'numeric'}),dias,px:dias*DW});
+    curM=new Date(curM.getFullYear(),curM.getMonth()+1,1);
+  }
+
+  const todayPx=Math.round((hoy-minF)/86400000)*DW;
+
+  const FASES=[
+    {k:'Ingeniería',c:'#3b82f6',o:.0,d:.25},
+    {k:'Compras',c:'#f59e0b',o:.1,d:.2},
+    {k:'Almacén',c:'#8b5cf6',o:.25,d:.15},
+    {k:'Diseño',c:'#f97316',o:.2,d:.2},
+    {k:'Montaje',c:'#22c55e',o:.4,d:.35},
+    {k:'Validación',c:'#06b6d4',o:.72,d:.18}
+  ];
+
+  let html=`<div class="gantt-wrap-outer" id="gantt-scroll">
+    <table style="border-collapse:collapse;min-width:${LW+totalW}px">
+      <colgroup><col style="width:${LW}px;min-width:${LW}px"></colgroup>
+      <!-- HEADER MESES -->
+      <tr style="background:var(--surface2)">
+        <th style="background:var(--surface2);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 12px;font-size:10px;color:var(--text3);text-align:left">PROYECTO / FASE</th>
+        <th style="padding:0;border-bottom:1px solid var(--border)">
+          <div style="display:flex">
+            ${meses.map(m=>`<div class="gantt-month-span" style="width:${m.px}px;min-width:${m.px}px">${m.label}</div>`).join('')}
+          </div>
+        </th>
+      </tr>
+      <!-- HEADER SEMANAS -->
+      <tr style="background:var(--bg)">
+        <th style="background:var(--surface2);border-right:1px solid var(--border);border-bottom:2px solid var(--border)"></th>
+        <th style="padding:0;border-bottom:2px solid var(--border)">
+          <div style="display:flex">
+            ${semanas.map(s=>`<div class="gantt-week-header" style="width:${7*DW}px;min-width:${7*DW}px">${s.label}</div>`).join('')}
+          </div>
+        </th>
+      </tr>`;
+
+  proyectos.forEach(p=>{
+    const ini=new Date(p.fechaInicio||hoy);
+    const fin=new Date(p.fechaCompromiso||maxF);
+    const dur=Math.max(7,Math.round((fin-ini)/86400000));
+    const s=semaforo(p);
+    const dot=s==='green'?'🟢':s==='yellow'?'🟡':'🔴';
+    const nc=DATA.clientes.find(c=>c.id===p.clienteId)?.nombre||'';
+    const barL=Math.round((ini-minF)/86400000)*DW;
+    const barW=dur*DW;
+
+    // Fila proyecto
+    html+=`<tr class="gantt-row-proj" style="height:44px">
+      <td class="gantt-label-cell" style="font-size:11px;font-weight:700">
+        <div>${dot} ${p.nombre||'—'}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px">${nc}</div>
+      </td>
+      <td style="position:relative;padding:0;height:44px">
+        <div class="gantt-today-line" style="left:${todayPx}px">
+          <div class="gantt-today-label" style="left:${todayPx}px">HOY</div>
+        </div>
+        <!-- Barra proyecto -->
+        <div style="position:absolute;left:${barL}px;width:${barW}px;height:10px;top:17px;
+          background:${s==='green'?'rgba(34,197,94,.2)':s==='yellow'?'rgba(245,158,11,.2)':'rgba(239,68,68,.2)'};
+          border-radius:3px;border:1px solid ${s==='green'?'var(--green)':s==='yellow'?'var(--yellow)':'var(--red)'}">
+        </div>
+        <!-- Fecha fin -->
+        <div style="position:absolute;left:${barL+barW+4}px;top:14px;font-size:9px;color:var(--text3);white-space:nowrap">${p.fechaCompromiso||''}</div>
+      </td>
+    </tr>`;
+
+    // Filas fases
+    const tp=DATA.tareas.filter(t=>t.proyectoId===p.id);
+    FASES.forEach(f=>{
+      const tf=tp.find(t=>t.fase===f.k);
+      const pct=tf?parseInt(tf.porcentaje||0):0;
+      const fIni=new Date(ini);fIni.setDate(ini.getDate()+Math.round(dur*f.o));
+      const fDur=Math.max(7,Math.round(dur*f.d));
+      const bL=Math.round((fIni-minF)/86400000)*DW;
+      const bW=fDur*DW;
+      const progW=Math.round(bW*(pct/100));
+      const resp=tf?tf.responsableNombre||'':'Sin asignar';
+      const estado=tf?tf.estado||'':'—';
+      const riesgo=tf?tf.riesgo||'':'';
+      const ric=riesgo.includes('Rojo')?'var(--red)':riesgo.includes('Amarillo')?'var(--yellow)':'var(--green)';
+
+      html+=`<tr class="gantt-row-fase" style="height:40px">
+        <td class="gantt-label-cell" style="padding-left:24px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${f.c};flex-shrink:0"></div>
+            <span style="font-size:10px;color:var(--text2);font-weight:500">${f.k}</span>
+            ${tf?`<span style="font-size:9px;font-weight:700;color:${ric}">${pct}%</span>`:''}
+          </div>
+          ${tf?`<div style="font-size:9px;color:var(--text3);padding-left:14px;margin-top:1px">👤 ${resp}</div>`:''}
+        </td>
+        <td style="position:relative;padding:0;height:40px">
+          <div class="gantt-today-line" style="left:${todayPx}px"></div>
+          ${tf?`<div class="gantt-bar-new" style="left:${bL}px;width:${bW}px;background:${f.c}" title="${f.k}: ${pct}% — ${resp}">
+            <div class="gantt-progress" style="width:${progW}px"></div>
+            <span style="position:relative;z-index:1">${pct}%</span>
+          </div>`:`<div style="position:absolute;left:${bL}px;width:${bW}px;height:18px;top:11px;
+            background:rgba(148,163,184,.08);border-radius:4px;border:1px dashed var(--border)"></div>`}
+          ${tf&&tf.fechaFinPrevista?`<div style="position:absolute;left:${bL+bW+2}px;top:13px;font-size:8px;color:var(--text3);white-space:nowrap">${tf.fechaFinPrevista}</div>`:''}
+        </td>
+      </tr>`;
+    });
+  });
+
+  html+=`</table></div>`;
+  container.innerHTML=html;
+
+  // Scroll libre con drag
+  const el=document.getElementById('gantt-scroll');
+  if(el){
+    let isDown=false,startX,scrollL;
+    el.addEventListener('mousedown',e=>{isDown=true;startX=e.pageX-el.offsetLeft;scrollL=el.scrollLeft;el.style.cursor='grabbing';});
+    el.addEventListener('mouseleave',()=>{isDown=false;el.style.cursor='grab';});
+    el.addEventListener('mouseup',()=>{isDown=false;el.style.cursor='grab';});
+    el.addEventListener('mousemove',e=>{if(!isDown)return;e.preventDefault();const x=e.pageX-el.offsetLeft;el.scrollLeft=scrollL-(x-startX);});
+    // Scroll a hoy
+    setTimeout(()=>{el.scrollLeft=Math.max(0,todayPx-LW-100);},100);
+  }
+}
+
+  const container=document.getElementById('gantt-container');
+  const filtro=document.getElementById('gantt-filter').value;
+  const proyectos=filtro?DATA.proyectos.filter(p=>p.id===filtro):DATA.proyectos;
   if(!proyectos.length){
     container.innerHTML=`<div class="empty"><div class="empty-icon">📅</div>Sin proyectos</div>`;
     return;
@@ -1413,7 +1694,7 @@ function renderFinanciero(){
   container.innerHTML=DATA.proyectos.map(p=>{
     const hitosP=DATA.hitos.filter(h=>h.proyectoId===p.id);
     const cobrado=hitosP.filter(h=>h.cobrado==='Sí').reduce((s,h)=>s+parseFloat(h.importe||0),0);
-    const pendiente=hitosP.filter(h=>h.cobrado==='No').reduce((s,h)=>s+parseFloat(h.importe||0),0);
+    const pendiente=Math.max(0,parseFloat(p.valor||0)-cobrado);
     const valor=parseFloat(p.valor||0);
     return `<div class="fin-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
@@ -1493,25 +1774,51 @@ function renderComunicaciones(){
   }).join('');
 }
 
+function comAutoProyecto(){
+  const pid=document.getElementById('c-proyecto').value;
+  const p=DATA.proyectos.find(x=>x.id===pid);
+  if(p&&p.clienteId){
+    document.getElementById('c-cliente-com').value=p.clienteId;
+    comAutoCliente();
+  }
+}
+function comAutoCliente(){
+  const clId=document.getElementById('c-cliente-com').value;
+  const cl=DATA.clientes.find(x=>x.id===clId);
+  const sel=document.getElementById('c-contacto-com');
+  sel.innerHTML='<option value="">Seleccionar contacto</option>';
+  if(!cl)return;
+  if(cl.email){const o=document.createElement('option');o.value=cl.email;o.textContent='Principal: '+cl.email;sel.appendChild(o);}
+  (cl.contactos||[]).forEach(ct=>{
+    if(ct.email){const o=document.createElement('option');o.value=ct.email;o.textContent=ct.nombre+' — '+ct.email;sel.appendChild(o);}
+  });
+  if(cl.email)document.getElementById('c-destinatario').value=cl.email;
+}
+function comAutoContacto(){
+  const email=document.getElementById('c-contacto-com').value;
+  if(email)document.getElementById('c-destinatario').value=email;
+}
 async function guardarComunicacion(){
   const dest=document.getElementById('c-destinatario').value.trim();
   const asunto=document.getElementById('c-asunto').value.trim();
   const contenido=document.getElementById('c-contenido').value.trim();
-  if(!dest||!asunto||!contenido){toast('Destinatario, asunto y contenido son obligatorios','error');return;}
-  const data={
-    proyectoId:document.getElementById('c-proyecto').value,
+  if(!dest||!asunto||!contenido){toast('Destinatario, asunto y contenido obligatorios','error');return;}
+  const enviarNow=document.getElementById('c-enviar-ahora')?.checked;
+  const data={proyectoId:document.getElementById('c-proyecto').value,
     fecha:new Date().toISOString().split('T')[0],
     tipo:document.getElementById('c-tipo').value,
     destinatario:dest,asunto,contenido,
-    createdAt:new Date().toISOString()
-  };
-  try {
+    enviado:enviarNow?'Si':'No',
+    createdAt:new Date().toISOString()};
+  try{
     await db.collection('comunicaciones').add(data);
-    toast('Comunicación guardada ✓','success');
-    cerrarModal('modal-comunicacion');
-    await cargarTodo();
-    renderComunicaciones();
-  } catch(e){toast('Error: '+e.message,'error');}
+    if(enviarNow&&dest.includes('@')){
+      const ok=await enviarEmail(dest,asunto,contenido);
+      if(ok)toast('Email enviado a '+dest+' y guardado','success');
+      else toast('Guardado pero fallo al enviar email','info');
+    }else{toast('Comunicacion guardada','success');}
+    cerrarModal('modal-comunicacion');await cargarTodo2();renderComunicaciones();
+  }catch(e){toast('Error: '+e.message,'error');}
 }
 
 // ── ALERTAS ────────────────────────────────────────────────────────────────
